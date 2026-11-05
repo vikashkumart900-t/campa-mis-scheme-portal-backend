@@ -56,13 +56,13 @@ import com.campa.mis.repo.SubAgencyRepository;
 import com.campa.mis.repo.UserAccountRepository;
 import com.campa.mis.repo.UserRoleRepository;
 import com.campa.mis.security.JwtService;
-import com.campa.mis.service.RegistrationService;
+import com.campa.mis.service.SchemeService;
 
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Service
-public class RegistrationServiceImpl implements RegistrationService {
+public class SchemeServiceImpl implements SchemeService {
 
 	private final RestTemplate restTemplate;
 
@@ -87,7 +87,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 	private final UserAccountRepository userAccountRepository;
 	private final JwtService jwtService;
 
-	public RegistrationServiceImpl(OrganizationRepository organizationRepository, StateRepository stateRepository,
+	public SchemeServiceImpl(OrganizationRepository organizationRepository, StateRepository stateRepository,
 			DistrictRepository districtRepository, SubAgencyRepository subAgencyRepository,
 			ProgramDivisionRepository programDivisionRepository, NodalOfficerRepository nodalOfficerRepository,
 			SchemeRepository schemeRepository, UserRoleRepository userRoleRepository,
@@ -141,7 +141,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 	// 3. Nodal officer registration
 	@Override
 	@Transactional
-	public String registerNodalOfficer(NodalOfficerRegistrationRequestDTO request) {
+	public String saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request) {
 
 		if (request == null) {
 			throw new IllegalArgumentException("Registration request is required");

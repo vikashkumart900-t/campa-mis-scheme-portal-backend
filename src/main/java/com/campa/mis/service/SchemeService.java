@@ -16,7 +16,7 @@ import com.campa.mis.entity.StateEntity;
 import com.campa.mis.entity.UserAccountEntity;
 import com.campa.mis.entity.UserRoleEntity;
 
-public interface RegistrationService {
+public interface SchemeService {
 
 	Map<String, Object> getDropdownData(Long organizationId);
 
@@ -24,7 +24,7 @@ public interface RegistrationService {
 	
 	List<StateEntity> getAllStates();
 
-	String registerNodalOfficer(NodalOfficerRegistrationRequestDTO request);
+	String saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request);
 
 	List<SchemeEntity> getAllActiveSchemes();
 
