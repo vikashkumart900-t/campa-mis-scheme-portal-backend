@@ -49,42 +49,22 @@ public class SecurityConfig {
 //		return new BCryptPasswordEncoder();
 //	}
 
-//	@Bean
-//	public CorsConfigurationSource corsConfigurationSource() {
-//		CorsConfiguration config = new CorsConfiguration();
-//
-//		config.setAllowedOrigins(List.of("http://localhost:5173"));
-//		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-//		config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-//		config.setAllowCredentials(false);
-//
-//		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//
-//		source.registerCorsConfiguration("/**", config);
-//		return source;
-//	}
-
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
-
 		CorsConfiguration config = new CorsConfiguration();
 
+		// config.setAllowedOrigins(List.of("http://localhost:5173"));
+		
 		// Allow all origins
 		config.setAllowedOriginPatterns(List.of("*"));
 
-		// Allow all HTTP methods
-		config.setAllowedMethods(List.of("*"));
-
-		// Allow all headers
-		config.setAllowedHeaders(List.of("*"));
-
-		// Allow credentials
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 		config.setAllowCredentials(false);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
 		source.registerCorsConfiguration("/**", config);
-
 		return source;
 	}
 }

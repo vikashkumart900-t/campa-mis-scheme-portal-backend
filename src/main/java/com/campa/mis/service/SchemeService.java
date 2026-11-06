@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
+import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
@@ -21,7 +22,7 @@ public interface SchemeService {
 	Map<String, Object> getDropdownData(Long organizationId);
 
 	List<DistrictEntity> getDistrictsByStateCode(String stateCode);
-	
+
 	List<StateEntity> getAllStates();
 
 	String saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request);
@@ -41,5 +42,11 @@ public interface SchemeService {
 	LoginResponse misLogin(LoginRequestDTO request);
 
 	void logout(String email, String tokenId);
+
+	void forgotPassword(String email);
+
+	String verifyOtp(String email, String otp);
+
+	void resetPassword(ResetPasswordRequest request);
 
 }

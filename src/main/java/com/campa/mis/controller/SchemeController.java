@@ -8,11 +8,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import com.campa.mis.dto.request.ForgotPasswordRequest;
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
+import com.campa.mis.dto.request.ResetPasswordRequest;
+import com.campa.mis.dto.request.VerifyOtpRequest;
 import com.campa.mis.dto.response.ApiResponse;
 import com.campa.mis.dto.response.LoginResponse;
+import com.campa.mis.dto.response.PasswordResetResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
 import com.campa.mis.entity.DistrictEntity;
@@ -27,7 +32,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/campa")
-@CrossOrigin(origins = "*")
 public class SchemeController {
 
 	private final SchemeService schemeService;
@@ -144,6 +148,31 @@ public class SchemeController {
 		schemeService.logout(email, tokenId);
 
 		return ResponseEntity.ok(ApiResponse.success("Logout successful"));
+	}
+
+	@PostMapping("/forgot-password")
+	public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+
+		schemeService.forgotPassword(request.email());
+
+		return ResponseEntity
+				.ok(ApiResponse.success("If the account exists, password reset instructions have been sent."));
+	}
+
+	@PostMapping("/verify-reset-otp")
+	public ResponseEntity<PasswordResetResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+
+		String resetToken = schemeService.verifyOtp(request.email(), request.otp());
+
+		return ResponseEntity.ok(new PasswordResetResponse(true, "OTP verified successfully", resetToken));
+	}
+
+	@PostMapping("/reset-password")
+	public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+
+		schemeService.resetPassword(request);
+
+		return ResponseEntity.ok(ApiResponse.success("Password reset successful"));
 	}
 
 }

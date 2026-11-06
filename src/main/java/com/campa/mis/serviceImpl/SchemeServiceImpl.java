@@ -1,19 +1,22 @@
 package com.campa.mis.serviceImpl;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -24,6 +27,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +37,11 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
+import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
@@ -42,6 +49,7 @@ import com.campa.mis.dto.response.UserAccountProjection;
 import com.campa.mis.entity.DistrictEntity;
 import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.entity.OrganizationEntity;
+import com.campa.mis.entity.PasswordResetRequestEntity;
 import com.campa.mis.entity.SchemeEntity;
 import com.campa.mis.entity.StateEntity;
 import com.campa.mis.entity.UserAccountEntity;
@@ -49,6 +57,7 @@ import com.campa.mis.entity.UserRoleEntity;
 import com.campa.mis.repo.DistrictRepository;
 import com.campa.mis.repo.NodalOfficerRepository;
 import com.campa.mis.repo.OrganizationRepository;
+import com.campa.mis.repo.PasswordResetRequestRepository;
 import com.campa.mis.repo.ProgramDivisionRepository;
 import com.campa.mis.repo.SchemeRepository;
 import com.campa.mis.repo.StateRepository;
@@ -57,9 +66,6 @@ import com.campa.mis.repo.UserAccountRepository;
 import com.campa.mis.repo.UserRoleRepository;
 import com.campa.mis.security.JwtService;
 import com.campa.mis.service.SchemeService;
-
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @Service
 public class SchemeServiceImpl implements SchemeService {
@@ -75,6 +81,8 @@ public class SchemeServiceImpl implements SchemeService {
 	@Value("${jwt.expiration-ms}")
 	private long expirationTime;
 
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
 	private final OrganizationRepository organizationRepository;
 	private final StateRepository stateRepository;
 	private final DistrictRepository districtRepository;
@@ -86,12 +94,15 @@ public class SchemeServiceImpl implements SchemeService {
 	private final UserRoleRepository userRoleRepository;
 	private final UserAccountRepository userAccountRepository;
 	private final JwtService jwtService;
+	private final PasswordResetRequestRepository passwordResetRepository;
+	private final EmailServiceImpl emailService;
 
 	public SchemeServiceImpl(OrganizationRepository organizationRepository, StateRepository stateRepository,
 			DistrictRepository districtRepository, SubAgencyRepository subAgencyRepository,
 			ProgramDivisionRepository programDivisionRepository, NodalOfficerRepository nodalOfficerRepository,
 			SchemeRepository schemeRepository, UserRoleRepository userRoleRepository,
-			UserAccountRepository userAccountRepository, JwtService jwtService) {
+			UserAccountRepository userAccountRepository, JwtService jwtService,
+			PasswordResetRequestRepository passwordResetRepository, EmailServiceImpl emailService) {
 
 		this.organizationRepository = organizationRepository;
 		this.stateRepository = stateRepository;
@@ -105,6 +116,8 @@ public class SchemeServiceImpl implements SchemeService {
 		this.userRoleRepository = userRoleRepository;
 		this.userAccountRepository = userAccountRepository;
 		this.jwtService = jwtService;
+		this.passwordResetRepository = passwordResetRepository;
+		this.emailService = emailService;
 	}
 
 	// 1. Organizations, states, program divisions and sub-agencies
@@ -388,5 +401,169 @@ public class SchemeServiceImpl implements SchemeService {
 
 		return stateRepository.findAll();
 
+	}
+
+	@Override
+	@Transactional
+	public void forgotPassword(String email) {
+
+		// 1. Find user by email
+		UserAccountEntity user = userAccountRepository.findByEmailIgnoreCase(email).orElse(null);
+
+		// Return generic success if account does not exist
+		if (user == null) {
+			return;
+		}
+
+		// 2. Generate OTP
+		String otp = generateOtp();
+
+		// 3. Hash OTP
+		String otpHash = passwordEncoder.encode(otp);
+
+		// 4. Invalidate previous unused reset requests
+		passwordResetRepository.invalidatePreviousRequests(user.getUserId());
+
+		// 5. Save new OTP request
+		PasswordResetRequestEntity reset = new PasswordResetRequestEntity();
+
+		reset.setUserId(user.getUserId());
+		reset.setOtpHash(otpHash);
+		reset.setExpiresAt(OffsetDateTime.now().plusMinutes(5));
+		reset.setAttempts(0);
+
+		passwordResetRepository.save(reset);
+
+		// Send OTP through email
+		emailService.sendOtpEmail(email, otp);
+	}
+
+	@Override
+	@Transactional
+	public String verifyOtp(String email, String otp) {
+
+		PasswordResetRequestEntity reset = passwordResetRepository.findLatestActiveRequest(email)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid or expired OTP"));
+
+		// Check OTP expiry
+		if (reset.getExpiresAt().isBefore(OffsetDateTime.now())) {
+			throw new IllegalArgumentException("OTP has expired");
+		}
+
+		// Check maximum attempts
+		if (reset.getAttempts() >= 5) {
+			throw new IllegalArgumentException("Maximum OTP attempts exceeded");
+		}
+
+		// Verify OTP using BCrypt
+		if (!passwordEncoder.matches(otp, reset.getOtpHash())) {
+
+			reset.setAttempts(reset.getAttempts() + 1);
+
+			passwordResetRepository.save(reset);
+
+			throw new IllegalArgumentException("Invalid OTP");
+		}
+
+		// Generate secure reset token
+		String resetToken = generateResetToken();
+
+		// Store SHA-256 hash instead of plain token
+		reset.setResetTokenHash(sha256(resetToken));
+
+		reset.setVerifiedAt(OffsetDateTime.now());
+
+		// Reset token validity: 10 minutes
+		reset.setResetTokenExpiresAt(OffsetDateTime.now().plusMinutes(10));
+
+		passwordResetRepository.save(reset);
+
+		return resetToken;
+	}
+
+	@Override
+	@Transactional
+	public void resetPassword(ResetPasswordRequest request) {
+
+		// Generate SHA-256 hash of received reset token
+		String tokenHash = sha256(request.resetToken());
+
+		// Find reset request using token hash
+		PasswordResetRequestEntity reset = passwordResetRepository.findByResetTokenHash(tokenHash)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
+
+		OffsetDateTime now = OffsetDateTime.now();
+
+		// Check whether token is already used
+		if (reset.getConsumedAt() != null) {
+			throw new IllegalArgumentException("Reset token has already been used");
+		}
+
+		// Check whether OTP was verified
+		if (reset.getVerifiedAt() == null) {
+			throw new IllegalArgumentException("OTP verification is required");
+		}
+
+		// Check reset token expiry
+		if (reset.getResetTokenExpiresAt() == null || reset.getResetTokenExpiresAt().isBefore(now)) {
+			throw new IllegalArgumentException("Reset token has expired");
+		}
+
+		// Validate new password
+		if (request.newPassword() == null || request.newPassword().length() < 8) {
+			throw new IllegalArgumentException("Password must contain at least 8 characters");
+		}
+
+		if (!request.newPassword().equals(request.confirmPassword())) {
+			throw new IllegalArgumentException("Password and confirm password do not match");
+		}
+
+		// Fetch user account using userId
+		UserAccountEntity user = userAccountRepository.findById(reset.getUserId())
+				.orElseThrow(() -> new IllegalArgumentException("User account not found"));
+
+		// Encode and update password
+		user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+
+		// Invalidate existing login sessions by clearing activeTokenId
+		user.setActiveTokenId(null);
+
+		// Mark reset request as consumed
+		reset.setConsumedAt(now);
+
+		// Save updated records
+		userAccountRepository.save(user);
+		passwordResetRepository.save(reset);
+	}
+
+	private String generateOtp() {
+
+		int otp = SECURE_RANDOM.nextInt(1_000_000);
+
+		return String.format("%06d", otp);
+	}
+
+	private String generateResetToken() {
+
+		byte[] bytes = new byte[32];
+
+		SECURE_RANDOM.nextBytes(bytes);
+
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+	}
+
+	private String sha256(String value) {
+
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+
+			return HexFormat.of().formatHex(hash);
+
+		} catch (NoSuchAlgorithmException ex) {
+
+			throw new IllegalStateException("SHA-256 algorithm not available", ex);
+		}
 	}
 }
