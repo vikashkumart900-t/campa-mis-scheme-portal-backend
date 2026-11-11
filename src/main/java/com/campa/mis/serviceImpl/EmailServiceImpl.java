@@ -35,4 +35,21 @@ public class EmailServiceImpl implements EmailService {
 
 		mailSender.send(message);
 	}
+
+	@Override
+	public void sendRegistrationEmail(String toEmail, String username, String password) {
+		SimpleMailMessage message = new SimpleMailMessage();
+
+		message.setFrom(senderEmail);
+		message.setTo(toEmail);
+		message.setSubject("CAMPA SCHEME-MIS Portal - Rgistration Request Received");
+
+		message.setText("Dear User,\n\n" + "We received a request for registration on CAMPA MIS Portal.\n\n"
+				+ "Your login credentials are as follows:\n" + "Username: " + username + "\n" + "Password: " + password
+				+ "\n\n" + "Please change your password after your first login.\n\n"
+				+ "If you did not request a registration, please ignore this email.\n\n" + "Regards,\n"
+				+ "CAMPA MIS Portal Team");
+
+		mailSender.send(message);
+	}
 }

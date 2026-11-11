@@ -16,15 +16,20 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.campa.mis.exception.CustomAuthenticationEntryPoint;
+
 import java.util.List;
 
 @Configuration
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtFilter;
+	private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+
+	public SecurityConfig(JwtAuthenticationFilter jwtFilter, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
 		this.jwtFilter = jwtFilter;
+		this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
 	}
 
 	@Bean
@@ -32,10 +37,9 @@ public class SecurityConfig {
 
 		return http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/campa/**", "/api/health").permitAll()
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/campa/**").permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll().anyRequest().authenticated())
-				.exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, e) -> response
-						.sendError(HttpStatus.UNAUTHORIZED.value(), "Authentication required")))
+				.exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
 	}
 
@@ -44,17 +48,12 @@ public class SecurityConfig {
 		return configuration.getAuthenticationManager();
 	}
 
-//	@Bean
-//	public PasswordEncoder passwordEncoder() {
-//		return new BCryptPasswordEncoder();
-//	}
-
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
 
 		// config.setAllowedOrigins(List.of("http://localhost:5173"));
-		
+
 		// Allow all origins
 		config.setAllowedOriginPatterns(List.of("*"));
 

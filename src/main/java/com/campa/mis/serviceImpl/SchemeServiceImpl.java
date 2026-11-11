@@ -65,6 +65,7 @@ import com.campa.mis.repo.SubAgencyRepository;
 import com.campa.mis.repo.UserAccountRepository;
 import com.campa.mis.repo.UserRoleRepository;
 import com.campa.mis.security.JwtService;
+import com.campa.mis.service.EmailService;
 import com.campa.mis.service.SchemeService;
 
 @Service
@@ -95,14 +96,14 @@ public class SchemeServiceImpl implements SchemeService {
 	private final UserAccountRepository userAccountRepository;
 	private final JwtService jwtService;
 	private final PasswordResetRequestRepository passwordResetRepository;
-	private final EmailServiceImpl emailService;
+	private final EmailService emailService;
 
 	public SchemeServiceImpl(OrganizationRepository organizationRepository, StateRepository stateRepository,
 			DistrictRepository districtRepository, SubAgencyRepository subAgencyRepository,
 			ProgramDivisionRepository programDivisionRepository, NodalOfficerRepository nodalOfficerRepository,
 			SchemeRepository schemeRepository, UserRoleRepository userRoleRepository,
 			UserAccountRepository userAccountRepository, JwtService jwtService,
-			PasswordResetRequestRepository passwordResetRepository, EmailServiceImpl emailService) {
+			PasswordResetRequestRepository passwordResetRepository, EmailService emailService) {
 
 		this.organizationRepository = organizationRepository;
 		this.stateRepository = stateRepository;
@@ -195,6 +196,13 @@ public class SchemeServiceImpl implements SchemeService {
 		officer.setEmail(request.email().trim());
 		officer.setMobile(request.mobile().trim());
 		officer.setOrganizationId(request.organizationId());
+		officer.setAadhaarNumber(request.aadhaarNumber());
+		officer.setCreatedAt(OffsetDateTime.now());
+		officer.setExpectedCompletionDate(request.expectedCompletionDate());
+		officer.setDateOfProposal(request.dateOfProposal());
+		officer.setProposedFinancialOutlay(request.proposedFinancialOutlay());
+		officer.setSchemeDuration(request.schemeDuration());
+		officer.setOrgName(request.orgName());
 
 		nodalOfficerRepository.save(officer);
 
@@ -327,6 +335,8 @@ public class SchemeServiceImpl implements SchemeService {
 
 		account.setAccountStatus("PENDING_APPROVAL");
 
+		emailService.sendRegistrationEmail(email, request.email(), request.password());
+
 		return userAccountRepository.save(account);
 	}
 
@@ -447,6 +457,7 @@ public class SchemeServiceImpl implements SchemeService {
 
 		// Check OTP expiry
 		if (reset.getExpiresAt().isBefore(OffsetDateTime.now())) {
+
 			throw new IllegalArgumentException("OTP has expired");
 		}
 
@@ -473,8 +484,8 @@ public class SchemeServiceImpl implements SchemeService {
 
 		reset.setVerifiedAt(OffsetDateTime.now());
 
-		// Reset token validity: 10 minutes
-		reset.setResetTokenExpiresAt(OffsetDateTime.now().plusMinutes(10));
+		// Reset token validity: 05 minutes
+		reset.setResetTokenExpiresAt(OffsetDateTime.now().plusMinutes(5));
 
 		passwordResetRepository.save(reset);
 
@@ -493,6 +504,9 @@ public class SchemeServiceImpl implements SchemeService {
 				.orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
 
 		OffsetDateTime now = OffsetDateTime.now();
+
+		System.out.println("Reset request details: " + reset.getConsumedAt() + ", " + reset.getVerifiedAt() + ", "
+				+ reset.getResetTokenExpiresAt());
 
 		// Check whether token is already used
 		if (reset.getConsumedAt() != null) {
@@ -524,9 +538,9 @@ public class SchemeServiceImpl implements SchemeService {
 
 		// Encode and update password
 		user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-
 		// Invalidate existing login sessions by clearing activeTokenId
 		user.setActiveTokenId(null);
+		user.setPasswordChangedAt(now);
 
 		// Mark reset request as consumed
 		reset.setConsumedAt(now);

@@ -63,12 +63,12 @@ public class SchemeController {
 		return ResponseEntity.ok(this.schemeService.getAllStates());
 	}
 
-	// Register nodal officer
-	@PostMapping("/nodal-officer")
-	public ResponseEntity<String> saveNodalOfficerDtls(@RequestBody NodalOfficerRegistrationRequestDTO request) {
-
-		return ResponseEntity.ok(this.schemeService.saveNodalOfficerData(request));
-	}
+//	// Register nodal officer
+//	@PostMapping("/nodal-officer")
+//	public ResponseEntity<String> saveNodalOfficerDtls(@RequestBody NodalOfficerRegistrationRequestDTO request) {
+//
+//		return ResponseEntity.ok(this.schemeService.saveNodalOfficerData(request));
+//	}
 
 	// get all active schemes
 	@GetMapping("/active-schemes")
@@ -113,47 +113,47 @@ public class SchemeController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(account);
 	}
 
-	@PostMapping("/logout")
-	public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication, HttpServletRequest request) {
-
-		// Validate authentication
-		if (authentication == null || !authentication.isAuthenticated()) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User is not authenticated"));
-		}
-
-		// Get authenticated user's email
-		String email = authentication.getName();
-
-		// Extract JWT from Authorization header
-		String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-		if (authorization == null || !authorization.startsWith("Bearer ")) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(ApiResponse.error("Invalid or missing Authorization header"));
-		}
-
-		String jwt = authorization.substring(7);
-
-		// Extract token ID
-		String tokenId;
-
-		try {
-			tokenId = jwtService.extractTokenId(jwt);
-		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-					.body(ApiResponse.error("Invalid or expired access token"));
-		}
-
-		// Invalidate user session
-		schemeService.logout(email, tokenId);
-
-		return ResponseEntity.ok(ApiResponse.success("Logout successful"));
-	}
+//	@PostMapping("/logout")
+//	public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication, HttpServletRequest request) {
+//
+//		// Validate authentication
+//		if (authentication == null || !authentication.isAuthenticated()) {
+//			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("User is not authenticated"));
+//		}
+//
+//		// Get authenticated user's email
+//		String email = authentication.getName();
+//
+//		// Extract JWT from Authorization header
+//		String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+//
+//		if (authorization == null || !authorization.startsWith("Bearer ")) {
+//			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+//					.body(ApiResponse.error("Invalid or missing Authorization header"));
+//		}
+//
+//		String jwt = authorization.substring(7);
+//
+//		// Extract token ID
+//		String tokenId;
+//
+//		try {
+//			tokenId = jwtService.extractTokenId(jwt);
+//		} catch (Exception ex) {
+//			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//					.body(ApiResponse.error("Invalid or expired access token"));
+//		}
+//
+//		// Invalidate user session
+//		schemeService.logout(email, tokenId);
+//
+//		return ResponseEntity.ok(ApiResponse.success("Logout successful"));
+//	}
 
 	@PostMapping("/forgot-password")
 	public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
 
-		schemeService.forgotPassword(request.email());
+		this.schemeService.forgotPassword(request.email());
 
 		return ResponseEntity
 				.ok(ApiResponse.success("If the account exists, password reset instructions have been sent."));
@@ -162,7 +162,7 @@ public class SchemeController {
 	@PostMapping("/verify-reset-otp")
 	public ResponseEntity<PasswordResetResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
 
-		String resetToken = schemeService.verifyOtp(request.email(), request.otp());
+		String resetToken = this.schemeService.verifyOtp(request.email(), request.otp());
 
 		return ResponseEntity.ok(new PasswordResetResponse(true, "OTP verified successfully", resetToken));
 	}
@@ -170,7 +170,7 @@ public class SchemeController {
 	@PostMapping("/reset-password")
 	public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
 
-		schemeService.resetPassword(request);
+		this.schemeService.resetPassword(request);
 
 		return ResponseEntity.ok(ApiResponse.success("Password reset successful"));
 	}
