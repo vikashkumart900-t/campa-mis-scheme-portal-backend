@@ -53,9 +53,12 @@ public class NodalOfficerEntity {
 
 	@Column(name = "scheme_duration", length = 100)
 	private String schemeDuration;
-	
-	@Column(name="org_name")
-	private String orgName;
+
+	@Column(name = "scheme_id")
+	private Long schemeId;
+
+	@Column(name = "division_id")
+	private Long divisionId;
 
 	@PrePersist
 	protected void onCreate() {

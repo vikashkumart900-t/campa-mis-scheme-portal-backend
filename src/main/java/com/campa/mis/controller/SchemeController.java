@@ -70,7 +70,7 @@ public class SchemeController {
 //		return ResponseEntity.ok(this.schemeService.saveNodalOfficerData(request));
 //	}
 
-	// get all active schemes
+	// get all schemes
 	@GetMapping("/active-schemes")
 	public ResponseEntity<List<SchemeEntity>> getAllActiveSchemes() {
 		return ResponseEntity.ok(this.schemeService.getAllActiveSchemes());

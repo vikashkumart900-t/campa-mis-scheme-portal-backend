@@ -181,30 +181,28 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new IllegalArgumentException("Mobile number is required");
 		}
 
-		if (request.password() == null || request.password().isBlank()) {
-			throw new IllegalArgumentException("Password is required");
-		}
-
 		// Verify that the selected organization exists
 		organizationRepository.findById(request.organizationId())
 				.orElseThrow(() -> new IllegalArgumentException("Invalid organization ID"));
 
-		NodalOfficerEntity officer = new NodalOfficerEntity();
+		NodalOfficerEntity officerEntity = new NodalOfficerEntity();
 
-		officer.setOfficerName(request.officerName().trim());
-		officer.setDesignation(request.designation().trim());
-		officer.setEmail(request.email().trim());
-		officer.setMobile(request.mobile().trim());
-		officer.setOrganizationId(request.organizationId());
-		officer.setAadhaarNumber(request.aadhaarNumber());
-		officer.setCreatedAt(OffsetDateTime.now());
-		officer.setExpectedCompletionDate(request.expectedCompletionDate());
-		officer.setDateOfProposal(request.dateOfProposal());
-		officer.setProposedFinancialOutlay(request.proposedFinancialOutlay());
-		officer.setSchemeDuration(request.schemeDuration());
-		officer.setOrgName(request.orgName());
+		officerEntity.setOfficerName(request.officerName().trim());
+		officerEntity.setDesignation(request.designation().trim());
+		officerEntity.setEmail(request.email().trim());
+		officerEntity.setMobile(request.mobile().trim());
+		officerEntity.setAadhaarNumber(request.aadhaarNumber());
+		officerEntity.setCreatedAt(OffsetDateTime.now());
+		officerEntity.setExpectedCompletionDate(request.expectedCompletionDate());
+		officerEntity.setDateOfProposal(request.dateOfProposal());
+		officerEntity.setProposedFinancialOutlay(request.proposedFinancialOutlay());
+		officerEntity.setSchemeDuration(request.schemeDuration());
+		officerEntity.setDivisionId(request.divisionId());
+		officerEntity.setSchemeId(request.schemeId());
+		officerEntity.setOrganizationId(request.organizationId());
+		
 
-		nodalOfficerRepository.save(officer);
+		nodalOfficerRepository.save(officerEntity);
 
 		return "Nodal officer registered successfully";
 	}
@@ -260,8 +258,14 @@ public class SchemeServiceImpl implements SchemeService {
 			String organizationName = row[1] != null ? row[1].toString() : null;
 
 			String divisionName = row[2] != null ? row[2].toString() : null;
+			
+			Long organizationId = row[3] != null ? Long.valueOf(row[3].toString()) : null;
+			
+			Long divisionId = row[4] != null ? Long.valueOf(row[4].toString()) : null;
+			
+			Long schemeIdValue = row[5] != null ? Long.valueOf(row[5].toString()) : null;
 
-			return new SchemeDetailsResponse(schemeName, organizationName, divisionName);
+			return new SchemeDetailsResponse(schemeName, organizationName, divisionName,organizationId, divisionId, schemeIdValue);
 		});
 	}
 

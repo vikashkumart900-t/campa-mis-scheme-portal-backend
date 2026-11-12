@@ -15,7 +15,11 @@ public interface SchemeRepository extends JpaRepository<SchemeEntity, Long> {
 
 	@Query(value = "SELECT\r\n" + "	s.scheme_name AS schemeName,\r\n"
 			+ "			    o.organization_name AS organizationName,\r\n"
-			+ "			    pd.division_name AS divisionName\r\n" + "	FROM mis_scheme.schemes s\r\n"
+			+ "			    pd.division_name AS divisionName,\r\n" 
+			+ "			    o.organization_id AS organizationId ,\r\n"
+			+ "			    pd.program_division_id AS divisionId ,\r\n"
+			+ "			    s.scheme_id AS schemeId \r\n"
+			+ "	FROM mis_scheme.schemes s \r\n"
 			+ "			LEFT JOIN mis_scheme.organizations o\r\n"
 			+ "			    ON s.organization_id = o.organization_id\r\n"
 			+ "			LEFT JOIN mis_scheme.program_divisions pd\r\n"
