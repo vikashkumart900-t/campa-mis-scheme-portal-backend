@@ -45,7 +45,7 @@ public class UserAccountEntity {
 	private String accountStatus = "PENDING_APPROVAL";
 
 	@Column(name = "approved_by")
-	private Long approvedBy;
+	private String approvedBy;
 
 	@Column(name = "approved_at")
 	private OffsetDateTime approvedAt;

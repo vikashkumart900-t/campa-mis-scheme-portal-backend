@@ -57,7 +57,7 @@ public class NodalOfficerEntity {
 	@Column(name = "scheme_id")
 	private Long schemeId;
 
-	@Column(name = "division_id")
+	@Column(name = "program_division_id")
 	private Long divisionId;
 
 	@PrePersist
