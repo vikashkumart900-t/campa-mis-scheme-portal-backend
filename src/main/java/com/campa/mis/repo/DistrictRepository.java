@@ -6,8 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.campa.mis.entity.DistrictEntity;
 
-public interface DistrictRepository extends JpaRepository<DistrictEntity,Long> {
+public interface DistrictRepository extends JpaRepository<DistrictEntity, Long> {
 
-	
 	List<DistrictEntity> findByStateCode(String stateCode);
+
+	boolean existsByDistrictCodeAndStateCode(String districtCode, String stateCode);
 }

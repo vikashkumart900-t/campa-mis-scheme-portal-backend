@@ -1,10 +1,12 @@
 package com.campa.mis.serviceImpl;
 
 import com.campa.mis.dto.request.MajorObjectiveRequest;
+import com.campa.mis.dto.request.ObjectiveDetailsRequest;
 import com.campa.mis.dto.request.SchemeObjectivesRequest;
 import com.campa.mis.dto.request.StateFundingRequest;
 import com.campa.mis.dto.response.DocumentUploadResponse;
 import com.campa.mis.dto.response.MinorObjectiveResponse;
+import com.campa.mis.dto.response.ObjectiveDetailsResponse;
 import com.campa.mis.dto.response.SchemeObjectivesResponse;
 import com.campa.mis.dto.response.StateFundingResponse;
 import com.campa.mis.entity.*;
@@ -28,8 +30,19 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 
 	private static final String UPLOAD_DIR = "uploads/schemes/";
 
+	@Transactional
+	public ObjectiveDetailsResponse saveObjectivesDetails(Long schemeId, ObjectiveDetailsRequest request,
+			MultipartFile stateAgreementFile, MultipartFile fundingDocumentFile) throws IOException {
+
+		List<SchemeObjectivesResponse> objectives = saveObjectives(schemeId, request.objectives());
+
+		StateFundingResponse funding = saveStateFunding(schemeId, request.stateFunding(), stateAgreementFile,
+				fundingDocumentFile);
+
+		return new ObjectiveDetailsResponse(objectives, funding);
+	}
+
 	// SAVE OBJECTIVES
-	@Override
 	@Transactional
 	public List<SchemeObjectivesResponse> saveObjectives(Long schemeId, SchemeObjectivesRequest request) {
 
@@ -39,7 +52,7 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 
 		// Remove existing objectives.
 		// Minor objectives are removed automatically through FK cascade.
-		//objectiveRepository.deleteBySchemeId(schemeId);
+		// objectiveRepository.deleteBySchemeId(schemeId);
 
 		List<SchemeObjectivesResponse> responses = new ArrayList<>();
 
@@ -117,75 +130,84 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 	}
 
 	// SAVE OR UPDATE STATE FUNDING DETAILS
-	@Override
 	@Transactional
-	public StateFundingResponse saveStateFunding(Long schemeId, StateFundingRequest request) {
+	public StateFundingResponse saveStateFunding(Long schemeId, StateFundingRequest request,
+			MultipartFile stateAgreementFile, MultipartFile fundingDocumentFile) throws IOException {
 
+		// 1. Mandatory Yes/No validation
 		if (request.hasStateComponents() == null || request.hasOtherFundingAgency() == null) {
 			throw new IllegalArgumentException("Please select Yes or No for both sections");
 		}
 
+		// 2. State onboarding validation
 		if (Boolean.TRUE.equals(request.hasStateComponents()) && request.stateOnboard() == null) {
 			throw new IllegalArgumentException("Please select whether the state is onboard");
 		}
 
+		// 3. Other funding source validation
 		if (Boolean.TRUE.equals(request.hasOtherFundingAgency())
 				&& (request.otherFundingSources() == null || request.otherFundingSources().isBlank())) {
 			throw new IllegalArgumentException("Please specify other funding sources");
 		}
 
-		SchemeStateFundingEntity schemeStateFundingEntity = fundingRepository.findBySchemeId(schemeId)
+		// 4. Find existing record or create new
+		SchemeStateFundingEntity fundingEntity = fundingRepository.findBySchemeId(schemeId)
 				.orElseGet(SchemeStateFundingEntity::new);
 
-		schemeStateFundingEntity.setSchemeId(schemeId);
+		fundingEntity.setSchemeId(schemeId);
+		fundingEntity.setHasStateComponents(request.hasStateComponents());
 
-		schemeStateFundingEntity.setHasStateComponents(request.hasStateComponents());
+		// 5. State components
+		if (Boolean.TRUE.equals(request.hasStateComponents())) {
 
-		schemeStateFundingEntity.setStateOnboard(Boolean.TRUE.equals(request.hasStateComponents()) ? request.stateOnboard() : null);
+			fundingEntity.setStateOnboard(request.stateOnboard());
 
-		schemeStateFundingEntity.setStateAgreementFileName(
-				Boolean.TRUE.equals(request.hasStateComponents()) ? request.stateAgreementFileName() : null);
+			if (stateAgreementFile != null && !stateAgreementFile.isEmpty()) {
 
-		schemeStateFundingEntity.setStateAgreementFilePath(
-				Boolean.TRUE.equals(request.hasStateComponents()) ? request.stateAgreementFilePath() : null);
+				// DocumentUploadResponse upload = uploadDocument(schemeId, "STATE_AGREEMENT",
+				// stateAgreementFile);
 
-		schemeStateFundingEntity.setHasOtherFundingAgency(request.hasOtherFundingAgency());
+				fundingEntity.setStateAgreementFileName(stateAgreementFile.getOriginalFilename());
+				// fundingEntity.setStateAgreementFilePath(upload.filePath());
+				fundingEntity.setStateAgreementFile(stateAgreementFile.getBytes());
+			}
 
-		schemeStateFundingEntity.setOtherFundingSources(
-				Boolean.TRUE.equals(request.hasOtherFundingAgency()) ? request.otherFundingSources() : null);
+		} else {
 
-		schemeStateFundingEntity.setFundingDocumentFileName(
-				Boolean.TRUE.equals(request.hasOtherFundingAgency()) ? request.fundingDocumentFileName() : null);
+			fundingEntity.setStateOnboard(null);
+			fundingEntity.setStateAgreementFileName(null);
+		}
 
-		schemeStateFundingEntity.setFundingDocumentFilePath(
-				Boolean.TRUE.equals(request.hasOtherFundingAgency()) ? request.fundingDocumentFilePath() : null);
+		// 6. Other funding agency
+		fundingEntity.setHasOtherFundingAgency(request.hasOtherFundingAgency());
 
-		SchemeStateFundingEntity saved = fundingRepository.save(schemeStateFundingEntity);
+		if (Boolean.TRUE.equals(request.hasOtherFundingAgency())) {
+
+			fundingEntity.setOtherFundingSources(request.otherFundingSources());
+
+			if (fundingDocumentFile != null && !fundingDocumentFile.isEmpty()) {
+
+				// DocumentUploadResponse upload = uploadDocument(schemeId, "FUNDING_DOCUMENT",
+				// fundingDocumentFile);
+
+				fundingEntity.setFundingDocumentFileName(fundingDocumentFile.getOriginalFilename());
+				fundingEntity.setFundingDocumentFile(fundingDocumentFile.getBytes());
+			}
+
+		} else {
+
+			fundingEntity.setOtherFundingSources(null);
+			fundingEntity.setFundingDocumentFileName(null);
+
+		}
+
+		// 7. Save
+		SchemeStateFundingEntity saved = fundingRepository.save(fundingEntity);
 
 		return mapFundingResponse(saved);
 	}
 
-	// FETCH STATE FUNDING DETAILS
-	@Override
-	@Transactional(readOnly = true)
-	public StateFundingResponse getStateFunding(Long schemeId) {
-
-		SchemeStateFundingEntity entity = fundingRepository.findBySchemeId(schemeId)
-				.orElseThrow(() -> new RuntimeException("State funding details not found"));
-
-		return mapFundingResponse(entity);
-	}
-
-	private StateFundingResponse mapFundingResponse(SchemeStateFundingEntity entity) {
-
-		return new StateFundingResponse(entity.getId(), entity.getSchemeId(), entity.getHasStateComponents(),
-				entity.getStateOnboard(), entity.getStateAgreementFileName(), entity.getStateAgreementFilePath(),
-				entity.getHasOtherFundingAgency(), entity.getOtherFundingSources(), entity.getFundingDocumentFileName(),
-				entity.getFundingDocumentFilePath());
-	}
-
 	// UPLOAD DOCUMENT
-	@Override
 	public DocumentUploadResponse uploadDocument(Long schemeId, String documentType, MultipartFile file) {
 
 		if (file == null || file.isEmpty()) {
@@ -204,8 +226,8 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 				? originalName.substring(originalName.lastIndexOf(".")).toLowerCase()
 				: "";
 
-		if (!Set.of(".pdf", ".doc", ".docx").contains(extension)) {
-			throw new IllegalArgumentException("Only PDF, DOC and DOCX files are allowed");
+		if (!Set.of(".pdf", ".doc", ".docx", ".jpg", "jpeg", ".png").contains(extension)) {
+			throw new IllegalArgumentException("Only PDF, DOC, DOCX,jpg ,jpeg and png files are allowed");
 		}
 
 		try {
@@ -213,7 +235,7 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 
 			Files.createDirectories(directory);
 
-			String storedName = UUID.randomUUID() + extension;
+			String storedName = originalName;
 
 			Path target = directory.resolve(storedName).normalize();
 
@@ -221,7 +243,7 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 				throw new IllegalArgumentException("Invalid file path");
 			}
 
-			Files.copy(file.getInputStream(), target);
+			Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
 			return new DocumentUploadResponse(originalName, target.toString(), "File uploaded successfully");
 
@@ -230,53 +252,21 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 		}
 	}
 
+	// FETCH STATE FUNDING DETAILS
 	@Override
-	@Transactional
-	public StateFundingResponse saveStateFunding(Long schemeId, Boolean hasStateComponents, Boolean stateOnboard,
-			MultipartFile stateAgreementFile, Boolean hasOtherFundingAgency, String otherFundingSources,
-			MultipartFile fundingDocumentFile) throws IOException {
+	@Transactional(readOnly = true)
+	public StateFundingResponse getStateFunding(Long schemeId) {
 
-		SchemeStateFundingEntity schemeStateFundingEntity = fundingRepository.findBySchemeId(schemeId)
-				.orElseGet(SchemeStateFundingEntity::new);
+		SchemeStateFundingEntity entity = fundingRepository.findBySchemeId(schemeId)
+				.orElseThrow(() -> new RuntimeException("State funding details not found"));
 
-		schemeStateFundingEntity.setSchemeId(schemeId);
+		return mapFundingResponse(entity);
+	}
 
-		schemeStateFundingEntity.setHasStateComponents(hasStateComponents);
+	private StateFundingResponse mapFundingResponse(SchemeStateFundingEntity entity) {
 
-		schemeStateFundingEntity.setStateOnboard(Boolean.TRUE.equals(hasStateComponents) ? stateOnboard : null);
-
-		if (Boolean.TRUE.equals(hasStateComponents) && stateAgreementFile != null && !stateAgreementFile.isEmpty()) {
-
-			schemeStateFundingEntity.setStateAgreementFileName(stateAgreementFile.getOriginalFilename());
-
-			schemeStateFundingEntity.setStateAgreementFile(stateAgreementFile.getBytes());
-
-		} else if (!Boolean.TRUE.equals(hasStateComponents)) {
-
-			schemeStateFundingEntity.setStateAgreementFileName(null);
-			schemeStateFundingEntity.setStateAgreementFile(null);
-		}
-
-		schemeStateFundingEntity.setHasOtherFundingAgency(hasOtherFundingAgency);
-
-		schemeStateFundingEntity
-				.setOtherFundingSources(Boolean.TRUE.equals(hasOtherFundingAgency) ? otherFundingSources : null);
-
-		if (Boolean.TRUE.equals(hasOtherFundingAgency) && fundingDocumentFile != null
-				&& !fundingDocumentFile.isEmpty()) {
-
-			schemeStateFundingEntity.setFundingDocumentFileName(fundingDocumentFile.getOriginalFilename());
-
-			schemeStateFundingEntity.setFundingDocumentFile(fundingDocumentFile.getBytes());
-
-		} else if (!Boolean.TRUE.equals(hasOtherFundingAgency)) {
-
-			schemeStateFundingEntity.setFundingDocumentFileName(null);
-			schemeStateFundingEntity.setFundingDocumentFile(null);
-		}
-
-		SchemeStateFundingEntity saved = fundingRepository.save(schemeStateFundingEntity);
-
-		return mapFundingResponse(saved);
+		return new StateFundingResponse(entity.getId(), entity.getSchemeId(), entity.getHasStateComponents(),
+				entity.getStateOnboard(), entity.getStateAgreementFileName(), entity.getHasOtherFundingAgency(),
+				entity.getOtherFundingSources(), entity.getFundingDocumentFileName());
 	}
 }

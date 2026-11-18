@@ -30,6 +30,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -51,6 +52,8 @@ import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.entity.OrganizationEntity;
 import com.campa.mis.entity.PasswordResetRequestEntity;
 import com.campa.mis.entity.SchemeEntity;
+import com.campa.mis.entity.SchemeImplementationDistrictEntity;
+import com.campa.mis.entity.SchemeImplementationStateEntity;
 import com.campa.mis.entity.StateEntity;
 import com.campa.mis.entity.UserAccountEntity;
 import com.campa.mis.entity.UserRoleEntity;
@@ -59,6 +62,9 @@ import com.campa.mis.repo.NodalOfficerRepository;
 import com.campa.mis.repo.OrganizationRepository;
 import com.campa.mis.repo.PasswordResetRequestRepository;
 import com.campa.mis.repo.ProgramDivisionRepository;
+import com.campa.mis.repo.ProposalTechnologyExitRepository;
+import com.campa.mis.repo.SchemeImplementationDistrictRepository;
+import com.campa.mis.repo.SchemeImplementationStateRepository;
 import com.campa.mis.repo.SchemeRepository;
 import com.campa.mis.repo.StateRepository;
 import com.campa.mis.repo.SubAgencyRepository;
@@ -67,11 +73,15 @@ import com.campa.mis.repo.UserRoleRepository;
 import com.campa.mis.security.JwtService;
 import com.campa.mis.service.EmailService;
 import com.campa.mis.service.SchemeService;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class SchemeServiceImpl implements SchemeService {
 
 	private final RestTemplate restTemplate;
+	private final PasswordEncoder passwordEncoder;
 
 	@Value("${parivesh.base-url}")
 	private String baseUrl;
@@ -84,42 +94,21 @@ public class SchemeServiceImpl implements SchemeService {
 
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+	private final SchemeImplementationStateRepository schemeImplementationStateRepository;
+	private final SchemeImplementationDistrictRepository schemeImplementationDistrictRepository;
 	private final OrganizationRepository organizationRepository;
 	private final StateRepository stateRepository;
 	private final DistrictRepository districtRepository;
 	private final SubAgencyRepository subAgencyRepository;
 	private final ProgramDivisionRepository programDivisionRepository;
 	private final NodalOfficerRepository nodalOfficerRepository;
-	private final BCryptPasswordEncoder passwordEncoder;
+	// private final BCryptPasswordEncoder passwordEncoder;
 	private final SchemeRepository schemeRepository;
 	private final UserRoleRepository userRoleRepository;
 	private final UserAccountRepository userAccountRepository;
 	private final JwtService jwtService;
 	private final PasswordResetRequestRepository passwordResetRepository;
 	private final EmailService emailService;
-
-	public SchemeServiceImpl(OrganizationRepository organizationRepository, StateRepository stateRepository,
-			DistrictRepository districtRepository, SubAgencyRepository subAgencyRepository,
-			ProgramDivisionRepository programDivisionRepository, NodalOfficerRepository nodalOfficerRepository,
-			SchemeRepository schemeRepository, UserRoleRepository userRoleRepository,
-			UserAccountRepository userAccountRepository, JwtService jwtService,
-			PasswordResetRequestRepository passwordResetRepository, EmailService emailService) {
-
-		this.organizationRepository = organizationRepository;
-		this.stateRepository = stateRepository;
-		this.districtRepository = districtRepository;
-		this.subAgencyRepository = subAgencyRepository;
-		this.programDivisionRepository = programDivisionRepository;
-		this.nodalOfficerRepository = nodalOfficerRepository;
-		this.passwordEncoder = new BCryptPasswordEncoder();
-		this.schemeRepository = schemeRepository;
-		this.restTemplate = new RestTemplate();
-		this.userRoleRepository = userRoleRepository;
-		this.userAccountRepository = userAccountRepository;
-		this.jwtService = jwtService;
-		this.passwordResetRepository = passwordResetRepository;
-		this.emailService = emailService;
-	}
 
 	// 1. Organizations, states, program divisions and sub-agencies
 	@Override
@@ -161,8 +150,18 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new IllegalArgumentException("Registration request is required");
 		}
 
+		// 1. Validate mandatory fields
+
 		if (request.organizationId() == null) {
 			throw new IllegalArgumentException("Organization ID is required");
+		}
+
+		if (request.schemeId() == null) {
+			throw new IllegalArgumentException("Scheme ID is required");
+		}
+
+		if (request.stateDistricts() == null || request.stateDistricts().isEmpty()) {
+			throw new IllegalArgumentException("At least one state is required");
 		}
 
 		if (request.officerName() == null || request.officerName().isBlank()) {
@@ -181,9 +180,17 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new IllegalArgumentException("Mobile number is required");
 		}
 
-		// Verify that the selected organization exists
-		organizationRepository.findById(request.organizationId())
+		// 2. Validate organization
+
+		this.organizationRepository.findById(request.organizationId())
 				.orElseThrow(() -> new IllegalArgumentException("Invalid organization ID"));
+
+		// 3. Validate scheme
+
+		this.schemeRepository.findById(request.schemeId())
+				.orElseThrow(() -> new IllegalArgumentException("Invalid scheme ID"));
+
+		// 4. Save nodal officer
 
 		NodalOfficerEntity officerEntity = new NodalOfficerEntity();
 
@@ -200,9 +207,58 @@ public class SchemeServiceImpl implements SchemeService {
 		officerEntity.setDivisionId(request.divisionId());
 		officerEntity.setSchemeId(request.schemeId());
 		officerEntity.setOrganizationId(request.organizationId());
-		
 
-		nodalOfficerRepository.save(officerEntity);
+		this.nodalOfficerRepository.save(officerEntity);
+
+		// 5. Process multiple states and their districts
+
+		for (NodalOfficerRegistrationRequestDTO.StateDistrictRequestDTO stateRequest : request.stateDistricts()) {
+
+			String stateCode = stateRequest.stateCode().trim();
+
+			// Validate state
+
+			this.stateRepository.findByStateCode(stateCode)
+					.orElseThrow(() -> new IllegalArgumentException("Invalid state code: " + stateCode));
+
+			// Remove duplicate district codes
+			List<String> districtCodes = stateRequest.districtCodes().stream().map(String::trim).distinct().toList();
+
+			// 6. Find existing scheme-state mapping
+			SchemeImplementationStateEntity stateEntity = schemeImplementationStateRepository
+					.findBySchemeIdAndStateCode(request.schemeId(), stateCode).orElse(null);
+
+			// 7. Create scheme-state mapping if not exists
+			if (stateEntity == null) {
+
+				stateEntity = new SchemeImplementationStateEntity();
+
+				stateEntity.setSchemeId(request.schemeId());
+				stateEntity.setStateCode(stateCode);
+
+				stateEntity = this.schemeImplementationStateRepository.save(stateEntity);
+			}
+
+			Long stateMappingId = stateEntity.getId();
+
+			// 8. Save multiple district mappings
+
+			for (String districtCode : districtCodes) {
+
+				boolean alreadyExists = this.schemeImplementationDistrictRepository
+						.existsBySchemeImplementationStateIdAndDistrictCode(stateMappingId, districtCode);
+
+				if (!alreadyExists) {
+
+					SchemeImplementationDistrictEntity districtEntity = new SchemeImplementationDistrictEntity();
+
+					districtEntity.setSchemeImplementationStateId(stateMappingId);
+					districtEntity.setDistrictCode(districtCode);
+
+					this.schemeImplementationDistrictRepository.save(districtEntity);
+				}
+			}
+		}
 
 		return "Nodal officer registered successfully";
 	}
@@ -258,14 +314,15 @@ public class SchemeServiceImpl implements SchemeService {
 			String organizationName = row[1] != null ? row[1].toString() : null;
 
 			String divisionName = row[2] != null ? row[2].toString() : null;
-			
+
 			Long organizationId = row[3] != null ? Long.valueOf(row[3].toString()) : null;
-			
+
 			Long divisionId = row[4] != null ? Long.valueOf(row[4].toString()) : null;
-			
+
 			Long schemeIdValue = row[5] != null ? Long.valueOf(row[5].toString()) : null;
 
-			return new SchemeDetailsResponse(schemeName, organizationName, divisionName,organizationId, divisionId, schemeIdValue);
+			return new SchemeDetailsResponse(schemeName, organizationName, divisionName, organizationId, divisionId,
+					schemeIdValue);
 		});
 	}
 

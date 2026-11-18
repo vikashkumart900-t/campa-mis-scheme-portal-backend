@@ -50,9 +50,6 @@ public class UserAccountEntity {
 	@Column(name = "approved_at")
 	private OffsetDateTime approvedAt;
 
-	@Column(name = "rejection_reason", columnDefinition = "text")
-	private String rejectionReason;
-
 	@Column(name = "last_login_at")
 	private OffsetDateTime lastLoginAt;
 

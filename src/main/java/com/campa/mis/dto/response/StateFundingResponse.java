@@ -12,15 +12,11 @@ public record StateFundingResponse(
 
 		String stateAgreementFileName,
 
-		String stateAgreementFilePath,
-
 		Boolean hasOtherFundingAgency,
 
 		String otherFundingSources,
 
-		String fundingDocumentFileName,
-
-		String fundingDocumentFilePath
+		String fundingDocumentFileName
 
 ) {
 

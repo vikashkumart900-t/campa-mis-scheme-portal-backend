@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "scheme_state_funding_details", schema = "mis_scheme")
 @Getter
@@ -27,9 +30,6 @@ public class SchemeStateFundingEntity {
 	@Column(name = "state_agreement_file_name")
 	private String stateAgreementFileName;
 
-	@Column(name = "state_agreement_file_path")
-	private String stateAgreementFilePath;
-
 	@Column(name = "has_other_funding_agency", nullable = false)
 	private Boolean hasOtherFundingAgency;
 
@@ -39,21 +39,18 @@ public class SchemeStateFundingEntity {
 	@Column(name = "funding_document_file_name")
 	private String fundingDocumentFileName;
 
-	@Column(name = "funding_document_file_path")
-	private String fundingDocumentFilePath;
-
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
-	@Lob
-	@Column(name = "state_agreement_file")
+	@JdbcTypeCode(SqlTypes.VARBINARY)
+	@Column(name = "state_agreement_file", columnDefinition = "bytea")
 	private byte[] stateAgreementFile;
 
-	@Lob
-	@Column(name = "funding_document_file")
+	@JdbcTypeCode(SqlTypes.VARBINARY)
+	@Column(name = "funding_document_file", columnDefinition = "bytea")
 	private byte[] fundingDocumentFile;
 
 	@PrePersist
