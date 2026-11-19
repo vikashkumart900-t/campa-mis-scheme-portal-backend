@@ -144,7 +144,7 @@ public class SchemeServiceImpl implements SchemeService {
 	// 3. Nodal officer registration
 	@Override
 	@Transactional
-	public String saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request) {
+	public NodalOfficerRegistrationRequestDTO saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request) {
 
 		if (request == null) {
 			throw new IllegalArgumentException("Registration request is required");
@@ -180,17 +180,10 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new IllegalArgumentException("Mobile number is required");
 		}
 
-		// 2. Validate organization
-
-		this.organizationRepository.findById(request.organizationId())
-				.orElseThrow(() -> new IllegalArgumentException("Invalid organization ID"));
-
-		// 3. Validate scheme
-
-		this.schemeRepository.findById(request.schemeId())
-				.orElseThrow(() -> new IllegalArgumentException("Invalid scheme ID"));
-
-		// 4. Save nodal officer
+		// 2. Save nodal officer
+//
+//		NodalOfficerEntity officerEntity = this.nodalOfficerRepository.findBySchemeId(request.schemeId())
+//				.orElseGet(NodalOfficerEntity::new);
 
 		NodalOfficerEntity officerEntity = new NodalOfficerEntity();
 
@@ -260,7 +253,7 @@ public class SchemeServiceImpl implements SchemeService {
 			}
 		}
 
-		return "Nodal officer registered successfully";
+		return request;
 	}
 
 	@Override

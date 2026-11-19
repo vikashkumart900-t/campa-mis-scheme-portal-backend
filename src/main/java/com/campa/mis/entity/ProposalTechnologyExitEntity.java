@@ -16,7 +16,7 @@ public class ProposalTechnologyExitEntity {
 	private Long id;
 
 	@Column(name = "scheme_id", nullable = false)
-	private Long SchemeId;
+	private Long schemeId;
 
 	// Section 13
 	@Column(name = "technological_intervention_description", nullable = false, columnDefinition = "TEXT")

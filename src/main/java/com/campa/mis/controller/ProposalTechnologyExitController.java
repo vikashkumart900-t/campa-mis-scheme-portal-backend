@@ -16,24 +16,29 @@ import com.campa.mis.service.ProposalTechnologyExitService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/v1/mis")
 @RequiredArgsConstructor
 public class ProposalTechnologyExitController {
 
-	private final ProposalTechnologyExitService service;
+	private final ProposalTechnologyExitService proposalTechnologyExitService;
+	private final ObjectMapper objectMapper;
 
 	// CREATE
-	@PostMapping(value="/tech-exit",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ProposalTechnologyExitResponse> create(
-			@Valid @RequestPart("request") ProposalTechnologyExitRequest request,
+	@PostMapping(value = "/tech-exit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<ProposalTechnologyExitResponse> create(@Valid @RequestPart("request") String request,
 
 			@RequestPart("technologicalDocument") MultipartFile technologicalDocument,
 
 			@RequestPart("exitProtocolDocument") MultipartFile exitProtocolDocument) throws IOException {
 
-		return ResponseEntity.ok(this.service.save(request, technologicalDocument, exitProtocolDocument));
+		ProposalTechnologyExitRequest exitRequest = objectMapper.readValue(request,
+				ProposalTechnologyExitRequest.class);
+
+		return ResponseEntity
+				.ok(this.proposalTechnologyExitService.saveProposalTechExit(exitRequest, technologicalDocument, exitProtocolDocument));
 	}
 
 //	// GET BY ID

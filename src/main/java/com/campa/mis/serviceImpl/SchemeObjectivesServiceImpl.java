@@ -42,28 +42,46 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 		return new ObjectiveDetailsResponse(objectives, funding);
 	}
 
-	// SAVE OBJECTIVES
+	// SAVE / UPDATE OBJECTIVES
 	@Transactional
 	public List<SchemeObjectivesResponse> saveObjectives(Long schemeId, SchemeObjectivesRequest request) {
 
-		if (request.majorObjectives() == null || request.majorObjectives().isEmpty()) {
+		if (schemeId == null) {
+			throw new IllegalArgumentException("Scheme ID is required");
+		}
+
+		if (request == null || request.majorObjectives() == null || request.majorObjectives().isEmpty()) {
+
 			throw new IllegalArgumentException("At least one major objective is required");
 		}
 
-		// Remove existing objectives.
-		// Minor objectives are removed automatically through FK cascade.
-		// objectiveRepository.deleteBySchemeId(schemeId);
+		// 1. FIND EXISTING OBJECTIVES
+		List<SchemeObjectiveEntity> existingObjectives = objectiveRepository.findBySchemeId(schemeId);
 
+		// 2. DELETE EXISTING MINOR OBJECTIVES
+		for (SchemeObjectiveEntity objective : existingObjectives) {
+
+			minorRepository.deleteByObjectiveId(objective.getObjectiveId());
+		}
+
+		// 3. DELETE EXISTING MAJOR OBJECTIVES
+		if (!existingObjectives.isEmpty()) {
+			objectiveRepository.deleteBySchemeId(schemeId);
+		}
+
+		// 4. SAVE NEW OBJECTIVES
 		List<SchemeObjectivesResponse> responses = new ArrayList<>();
 
 		int majorOrder = 1;
 
 		for (MajorObjectiveRequest major : request.majorObjectives()) {
 
-			if (major.majorObjective() == null || major.majorObjective().isBlank()) {
+			if (major == null || major.majorObjective() == null || major.majorObjective().isBlank()) {
+
 				throw new IllegalArgumentException("Major objective cannot be empty");
 			}
 
+			// SAVE MAJOR OBJECTIVE
 			SchemeObjectiveEntity objective = new SchemeObjectiveEntity();
 
 			objective.setSchemeId(schemeId);
@@ -74,6 +92,7 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 
 			List<MinorObjectiveResponse> minorResponses = new ArrayList<>();
 
+			// SAVE MINOR OBJECTIVES
 			if (major.minorObjectives() != null) {
 
 				int minorOrder = 1;
@@ -98,6 +117,7 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 				}
 			}
 
+			// ADD RESPONSE
 			responses.add(new SchemeObjectivesResponse(savedObjective.getObjectiveId(),
 					savedObjective.getMajorObjective(), savedObjective.getDisplayOrder(), minorResponses));
 		}

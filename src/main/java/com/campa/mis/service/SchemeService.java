@@ -25,7 +25,7 @@ public interface SchemeService {
 
 	List<StateEntity> getAllStates();
 
-	String saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request);
+	NodalOfficerRegistrationRequestDTO saveNodalOfficerData(NodalOfficerRegistrationRequestDTO request);
 
 	List<SchemeEntity> getAllActiveSchemes();
 

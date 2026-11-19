@@ -15,50 +15,51 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExitService {
 
-	private final ProposalTechnologyExitRepository repository;
+	private final ProposalTechnologyExitRepository technologyExitRepository;
 
 	// CREATE
 	@Override
 	@Transactional
-	public ProposalTechnologyExitResponse save(ProposalTechnologyExitRequest request,
+	public ProposalTechnologyExitResponse saveProposalTechExit(ProposalTechnologyExitRequest request,
 			MultipartFile technologicalDocument, MultipartFile exitProtocolDocument) {
 
 		validateFile(technologicalDocument);
 		validateFile(exitProtocolDocument);
 
-		ProposalTechnologyExitEntity entity = new ProposalTechnologyExitEntity();
+		ProposalTechnologyExitEntity technologyExitEntity = this.technologyExitRepository.findBySchemeId(request.schemeId())
+				.orElseGet(ProposalTechnologyExitEntity::new);
 
-		entity.setSchemeId(request.schemeId());
+		technologyExitEntity.setSchemeId(request.schemeId());
 
 		// Section 13
-		entity.setTechnologicalInterventionDescription(request.technologicalInterventionDescription());
+		technologyExitEntity.setTechnologicalInterventionDescription(request.technologicalInterventionDescription());
 
-		entity.setTechnologicalDocumentName(technologicalDocument.getOriginalFilename());
+		technologyExitEntity.setTechnologicalDocumentName(technologicalDocument.getOriginalFilename());
 
-		entity.setTechnologicalDocumentType(technologicalDocument.getContentType());
+		technologyExitEntity.setTechnologicalDocumentType(technologicalDocument.getContentType());
 
 		try {
-			entity.setTechnologicalDocumentData(technologicalDocument.getBytes());
+			technologyExitEntity.setTechnologicalDocumentData(technologicalDocument.getBytes());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		// Section 14
-		entity.setExitProtocolDescription(request.exitProtocolDescription());
+		technologyExitEntity.setExitProtocolDescription(request.exitProtocolDescription());
 
-		entity.setExitProtocolDocumentName(exitProtocolDocument.getOriginalFilename());
+		technologyExitEntity.setExitProtocolDocumentName(exitProtocolDocument.getOriginalFilename());
 
-		entity.setExitProtocolDocumentType(exitProtocolDocument.getContentType());
+		technologyExitEntity.setExitProtocolDocumentType(exitProtocolDocument.getContentType());
 
 		try {
-			entity.setExitProtocolDocumentData(exitProtocolDocument.getBytes());
+			technologyExitEntity.setExitProtocolDocumentData(exitProtocolDocument.getBytes());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		ProposalTechnologyExitEntity savedEntity = repository.save(entity);
+		ProposalTechnologyExitEntity savedEntity = this.technologyExitRepository.save(technologyExitEntity);
 
 		return mapToResponse(savedEntity);
 	}

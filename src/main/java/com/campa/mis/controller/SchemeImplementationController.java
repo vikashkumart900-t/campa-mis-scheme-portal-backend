@@ -66,9 +66,13 @@ public class SchemeImplementationController {
 
 	// Register nodal officer
 	@PostMapping("/nodal-officer")
-	public ResponseEntity<String> saveNodalOfficerDtls(@RequestBody NodalOfficerRegistrationRequestDTO request) {
+	public ResponseEntity<NodalOfficerRegistrationRequestDTO> saveNodalOfficerDtls(
+			@RequestBody NodalOfficerRegistrationRequestDTO request) {
 
-		return ResponseEntity.ok(this.schemeService.saveNodalOfficerData(request));
+		NodalOfficerRegistrationRequestDTO nodalOfficerRegistrationRequestDTO = this.schemeService
+				.saveNodalOfficerData(request);
+
+		return ResponseEntity.ok(nodalOfficerRegistrationRequestDTO);
 	}
 
 }

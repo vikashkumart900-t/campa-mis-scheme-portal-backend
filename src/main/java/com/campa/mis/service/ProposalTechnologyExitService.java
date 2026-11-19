@@ -7,7 +7,7 @@ import io.jsonwebtoken.io.IOException;
 
 public interface ProposalTechnologyExitService {
 
-	ProposalTechnologyExitResponse save(ProposalTechnologyExitRequest request, MultipartFile technologicalDocument,
+	ProposalTechnologyExitResponse saveProposalTechExit(ProposalTechnologyExitRequest request, MultipartFile technologicalDocument,
 			MultipartFile exitProtocolDocument) throws IOException;
 
 }

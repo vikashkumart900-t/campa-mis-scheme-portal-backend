@@ -20,39 +20,35 @@ import lombok.Data;
 @Data
 public class SchemeSupportingDocumentEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "scheme_id", nullable = false)
-    private Long schemeId;
+	@Column(name = "scheme_id", nullable = false)
+	private Long schemeId;
 
-    // KML or IMAGE
-    @Column(name = "document_type", nullable = false, length = 20)
-    private String documentType;
+	// KML or IMAGE
+	@Column(name = "document_type", nullable = false, length = 20)
+	private String documentType;
 
-    @Column(name = "description", nullable = false,
-            columnDefinition = "TEXT")
-    private String description;
+	@Column(name = "description", nullable = false, columnDefinition = "TEXT")
+	private String description;
 
-    @Column(name = "file_name")
-    private String fileName;
+	@Column(name = "file_name")
+	private String fileName;
 
-    @Column(name = "content_type")
-    private String contentType;
+	@Column(name = "content_type")
+	private String contentType;
 
-    @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "file_data", columnDefinition = "BYTEA")
-    private byte[] fileData;
+	@JdbcTypeCode(SqlTypes.VARBINARY)
+	@Column(name = "file_data", columnDefinition = "BYTEA")
+	private byte[] fileData;
 
-    @Column(name = "file_size")
-    private Long fileSize;
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    public void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+	@PrePersist
+	public void onCreate() {
+		createdAt = LocalDateTime.now();
+	}
 }
