@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record ProposalTechnologyExitRequest(
 
-		@NotNull Long schemeId,
-
 		// Section 13
 		@NotBlank String technologicalInterventionDescription,
 

@@ -181,11 +181,9 @@ public class SchemeServiceImpl implements SchemeService {
 		}
 
 		// 2. Save nodal officer
-//
-//		NodalOfficerEntity officerEntity = this.nodalOfficerRepository.findBySchemeId(request.schemeId())
-//				.orElseGet(NodalOfficerEntity::new);
 
-		NodalOfficerEntity officerEntity = new NodalOfficerEntity();
+		NodalOfficerEntity officerEntity = this.nodalOfficerRepository.findBySchemeId(request.schemeId())
+				.orElseGet(NodalOfficerEntity::new);
 
 		officerEntity.setOfficerName(request.officerName().trim());
 		officerEntity.setDesignation(request.designation().trim());

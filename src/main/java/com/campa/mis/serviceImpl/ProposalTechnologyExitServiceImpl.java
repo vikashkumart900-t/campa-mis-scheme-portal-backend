@@ -17,19 +17,18 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 
 	private final ProposalTechnologyExitRepository technologyExitRepository;
 
-	// CREATE
 	@Override
 	@Transactional
-	public ProposalTechnologyExitResponse saveProposalTechExit(ProposalTechnologyExitRequest request,
+	public ProposalTechnologyExitResponse saveProposalTechExit(Long schemeId, ProposalTechnologyExitRequest request,
 			MultipartFile technologicalDocument, MultipartFile exitProtocolDocument) {
 
 		validateFile(technologicalDocument);
 		validateFile(exitProtocolDocument);
 
-		ProposalTechnologyExitEntity technologyExitEntity = this.technologyExitRepository.findBySchemeId(request.schemeId())
+		ProposalTechnologyExitEntity technologyExitEntity = this.technologyExitRepository.findBySchemeId(schemeId)
 				.orElseGet(ProposalTechnologyExitEntity::new);
 
-		technologyExitEntity.setSchemeId(request.schemeId());
+		technologyExitEntity.setSchemeId(schemeId);
 
 		// Section 13
 		technologyExitEntity.setTechnologicalInterventionDescription(request.technologicalInterventionDescription());
@@ -61,7 +60,7 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 
 		ProposalTechnologyExitEntity savedEntity = this.technologyExitRepository.save(technologyExitEntity);
 
-		return mapToResponse(savedEntity);
+		return mapToResponse(savedEntity, schemeId);
 	}
 
 	// FILE VALIDATION
@@ -77,9 +76,10 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 	}
 
 	// ENTITY TO RESPONSE DTO
-	private ProposalTechnologyExitResponse mapToResponse(ProposalTechnologyExitEntity technologyExitEntity) {
+	private ProposalTechnologyExitResponse mapToResponse(ProposalTechnologyExitEntity technologyExitEntity,
+			Long schemeId) {
 
-		return new ProposalTechnologyExitResponse(technologyExitEntity.getId(), technologyExitEntity.getSchemeId(),
+		return new ProposalTechnologyExitResponse(technologyExitEntity.getId(), schemeId,
 
 				technologyExitEntity.getTechnologicalInterventionDescription(),
 				technologyExitEntity.getTechnologicalDocumentName(),

@@ -39,6 +39,9 @@ public class NodalOfficerEntity {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
 
+	@Column(name = "updated_at")
+	private OffsetDateTime updatedAt;
+
 	@Column(name = "aadhaar_number", length = 12)
 	private String aadhaarNumber;
 
@@ -68,6 +71,11 @@ public class NodalOfficerEntity {
 			createdAt = now;
 		}
 
+		updatedAt = now;
 	}
 
+	@PreUpdate
+	protected void onUpdate() {
+		updatedAt = OffsetDateTime.now();
+	}
 }

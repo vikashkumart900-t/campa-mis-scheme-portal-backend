@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -27,8 +28,8 @@ public class ProposalTechnologyExitController {
 	private final ObjectMapper objectMapper;
 
 	// CREATE
-	@PostMapping(value = "/tech-exit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ProposalTechnologyExitResponse> create(@Valid @RequestPart("request") String request,
+	@PostMapping(value = "/{schemeId}/tech-exit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<ProposalTechnologyExitResponse> create(@PathVariable Long schemeId,@Valid @RequestPart("request") String request,
 
 			@RequestPart("technologicalDocument") MultipartFile technologicalDocument,
 
@@ -38,7 +39,7 @@ public class ProposalTechnologyExitController {
 				ProposalTechnologyExitRequest.class);
 
 		return ResponseEntity
-				.ok(this.proposalTechnologyExitService.saveProposalTechExit(exitRequest, technologicalDocument, exitProtocolDocument));
+				.ok(this.proposalTechnologyExitService.saveProposalTechExit(schemeId,exitRequest, technologicalDocument, exitProtocolDocument));
 	}
 
 //	// GET BY ID
