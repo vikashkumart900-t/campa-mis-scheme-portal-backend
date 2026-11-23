@@ -27,7 +27,7 @@ public class SchemeDeliverablesController {
 	}
 
 	// FETCH
-	@GetMapping("/{schemeId}/deliverables")
+	@GetMapping("/deliverables/{schemeId}")
 	public ResponseEntity<?> getDeliverables(@PathVariable Long schemeId) {
 
 		return ResponseEntity.ok(this.schemeDeliverablesService.getDeliverables(schemeId));

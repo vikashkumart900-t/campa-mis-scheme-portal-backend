@@ -23,6 +23,4 @@ public interface NodalOfficerDetailsResponse {
 
 	String getSchemeDuration();
 
-	String getSchemeImplementingStates();
-
 }

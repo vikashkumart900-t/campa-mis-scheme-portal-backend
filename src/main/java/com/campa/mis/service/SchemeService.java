@@ -10,6 +10,7 @@ import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
 import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
+import com.campa.mis.dto.response.NodalOfficerDetailsDTO;
 import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
@@ -56,7 +57,7 @@ public interface SchemeService {
 	
 	List<ProposalListingProjectionResponse> getAllProposalDetails();
 	
-	List<NodalOfficerDetailsResponse> getNodalOfficerDetailsBySchemeId(Long schemeId);
+	List<NodalOfficerDetailsDTO> getNodalOfficerDetailsBySchemeId(Long schemeId);
 	
 
 }

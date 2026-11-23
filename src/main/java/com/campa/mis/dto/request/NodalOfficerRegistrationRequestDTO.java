@@ -42,6 +42,5 @@ public record NodalOfficerRegistrationRequestDTO(
 
 			@NotEmpty List<@NotBlank String> districtCodes
 
-	) {
-	}
+	) {}
 }

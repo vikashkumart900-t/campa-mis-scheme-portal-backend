@@ -1,14 +1,17 @@
 package com.campa.mis.serviceImpl;
 
 import java.io.IOException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.campa.mis.dto.request.ProposalTechnologyExitRequest;
 import com.campa.mis.dto.response.ProposalTechnologyExitResponse;
 import com.campa.mis.entity.SchemeTechnologyExitEntity;
 import com.campa.mis.repo.ProposalTechnologyExitRepository;
 import com.campa.mis.service.ProposalTechnologyExitService;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -89,5 +92,15 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 				technologyExitEntity.getExitProtocolDocumentType(),
 
 				technologyExitEntity.getCreatedAt(), technologyExitEntity.getUpdatedAt());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public ProposalTechnologyExitResponse getProposalTechExitBySchemeId(Long schemeId) {
+
+		SchemeTechnologyExitEntity technologyExitEntity = technologyExitRepository.findBySchemeId(schemeId).orElseThrow(
+				() -> new RuntimeException("Technology exit details not found for scheme ID: " + schemeId));
+
+		return mapToResponse(technologyExitEntity, schemeId);
 	}
 }

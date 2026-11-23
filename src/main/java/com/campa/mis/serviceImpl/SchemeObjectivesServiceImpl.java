@@ -1,5 +1,19 @@
 package com.campa.mis.serviceImpl;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.campa.mis.dto.request.MajorObjectiveRequest;
 import com.campa.mis.dto.request.ObjectiveDetailsRequest;
 import com.campa.mis.dto.request.SchemeObjectivesRequest;
@@ -7,18 +21,18 @@ import com.campa.mis.dto.request.StateFundingRequest;
 import com.campa.mis.dto.response.DocumentUploadResponse;
 import com.campa.mis.dto.response.MinorObjectiveResponse;
 import com.campa.mis.dto.response.ObjectiveDetailsResponse;
+import com.campa.mis.dto.response.SchemeFundingObjectivesResponse;
 import com.campa.mis.dto.response.SchemeObjectivesResponse;
 import com.campa.mis.dto.response.StateFundingResponse;
-import com.campa.mis.entity.*;
-import com.campa.mis.repo.*;
+import com.campa.mis.entity.SchemeMinorObjectiveEntity;
+import com.campa.mis.entity.SchemeObjectiveEntity;
+import com.campa.mis.entity.SchemeStateFundingEntity;
+import com.campa.mis.repo.SchemeMinorObjectiveRepository;
+import com.campa.mis.repo.SchemeObjectiveRepository;
+import com.campa.mis.repo.SchemeStateFundingRepository;
 import com.campa.mis.service.SchemeObjectivesService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -120,30 +134,6 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 			// ADD RESPONSE
 			responses.add(new SchemeObjectivesResponse(savedObjective.getObjectiveId(),
 					savedObjective.getMajorObjective(), savedObjective.getDisplayOrder(), minorResponses));
-		}
-
-		return responses;
-	}
-
-	// FETCH OBJECTIVES
-	@Override
-	@Transactional(readOnly = true)
-	public List<SchemeObjectivesResponse> getObjectives(Long schemeId) {
-
-		List<SchemeObjectiveEntity> objectives = objectiveRepository.findBySchemeIdOrderByDisplayOrderAsc(schemeId);
-
-		List<SchemeObjectivesResponse> responses = new ArrayList<>();
-
-		for (SchemeObjectiveEntity objective : objectives) {
-
-			List<MinorObjectiveResponse> minors = minorRepository
-					.findByObjectiveIdOrderByDisplayOrderAsc(objective.getObjectiveId()).stream()
-					.map(m -> new MinorObjectiveResponse(m.getMinorObjectiveId(), m.getMinorObjective(),
-							m.getDisplayOrder()))
-					.toList();
-
-			responses.add(new SchemeObjectivesResponse(objective.getObjectiveId(), objective.getMajorObjective(),
-					objective.getDisplayOrder(), minors));
 		}
 
 		return responses;
@@ -272,21 +262,40 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 		}
 	}
 
-	// FETCH STATE FUNDING DETAILS
-	@Override
-	@Transactional(readOnly = true)
-	public StateFundingResponse getStateFunding(Long schemeId) {
-
-		SchemeStateFundingEntity entity = fundingRepository.findBySchemeId(schemeId)
-				.orElseThrow(() -> new RuntimeException("State funding details not found"));
-
-		return mapFundingResponse(entity);
-	}
-
 	private StateFundingResponse mapFundingResponse(SchemeStateFundingEntity entity) {
 
 		return new StateFundingResponse(entity.getId(), entity.getSchemeId(), entity.getHasStateComponents(),
 				entity.getStateOnboard(), entity.getStateAgreementFileName(), entity.getHasOtherFundingAgency(),
 				entity.getOtherFundingSources(), entity.getFundingDocumentFileName());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public SchemeFundingObjectivesResponse getFundingAndObjectives(Long schemeId) {
+
+		// FETCH STATE FUNDING
+		SchemeStateFundingEntity entity = fundingRepository.findBySchemeId(schemeId)
+				.orElseThrow(() -> new RuntimeException("State funding details not found for scheme ID: " + schemeId));
+
+		StateFundingResponse fundingResponse = mapFundingResponse(entity);
+
+		// FETCH OBJECTIVES
+		List<SchemeObjectiveEntity> objectives = objectiveRepository.findBySchemeIdOrderByDisplayOrderAsc(schemeId);
+
+		List<SchemeObjectivesResponse> objectiveResponses = new ArrayList<>();
+
+		for (SchemeObjectiveEntity objective : objectives) {
+
+			List<MinorObjectiveResponse> minors = minorRepository
+					.findByObjectiveIdOrderByDisplayOrderAsc(objective.getObjectiveId()).stream()
+					.map(m -> new MinorObjectiveResponse(m.getMinorObjectiveId(), m.getMinorObjective(),
+							m.getDisplayOrder()))
+					.toList();
+
+			objectiveResponses.add(new SchemeObjectivesResponse(objective.getObjectiveId(),
+					objective.getMajorObjective(), objective.getDisplayOrder(), minors));
+		}
+
+		return new SchemeFundingObjectivesResponse(fundingResponse, objectiveResponses);
 	}
 }

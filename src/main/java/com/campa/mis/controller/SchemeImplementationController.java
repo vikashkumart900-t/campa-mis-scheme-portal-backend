@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.response.ApiResponse;
+import com.campa.mis.dto.response.NodalOfficerDetailsDTO;
 import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.security.JwtService;
@@ -71,7 +72,7 @@ public class SchemeImplementationController {
 	}
 
 	// Register nodal officer
-	@PostMapping("/nodal-officer")
+	@PostMapping("/basic-info")
 	public ResponseEntity<NodalOfficerRegistrationRequestDTO> saveNodalOfficerDtls(
 			@RequestBody NodalOfficerRegistrationRequestDTO request) {
 
@@ -82,8 +83,8 @@ public class SchemeImplementationController {
 	}
 
 	// GET Nodal Officer Details By Scheme ID
-	@GetMapping("/nodal-officer/{schemeId}")
-	public ResponseEntity<List<NodalOfficerDetailsResponse>> getNodalOfficerDetails(@PathVariable Long schemeId) {
+	@GetMapping("/basic-info/{schemeId}")
+	public ResponseEntity<List<NodalOfficerDetailsDTO>> getNodalOfficerDetails(@PathVariable Long schemeId) {
 
 		return ResponseEntity.ok(schemeService.getNodalOfficerDetailsBySchemeId(schemeId));
 	}

@@ -9,10 +9,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,9 +48,11 @@ import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
 import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
+import com.campa.mis.dto.response.NodalOfficerDetailsDTO;
 import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
+import com.campa.mis.dto.response.StateDistrictResponse;
 import com.campa.mis.dto.response.UserAccountProjection;
 import com.campa.mis.entity.DistrictEntity;
 import com.campa.mis.entity.NodalOfficerEntity;
@@ -686,15 +690,40 @@ public class SchemeServiceImpl implements SchemeService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<NodalOfficerDetailsResponse> getNodalOfficerDetailsBySchemeId(Long schemeId) {
+	public List<NodalOfficerDetailsDTO> getNodalOfficerDetailsBySchemeId(Long schemeId) {
 
-		List<NodalOfficerDetailsResponse> response = nodalOfficerRepository.findNodalOfficerDetailsBySchemeId(schemeId);
+		// Fetch nodal officer details
+		List<NodalOfficerDetailsResponse> officers = nodalOfficerRepository.findNodalOfficerDetailsBySchemeId(schemeId);
 
-		if (response.isEmpty()) {
+		if (officers.isEmpty()) {
 			throw new RuntimeException("Nodal officer details not found for scheme ID: " + schemeId);
 		}
 
-		return response;
+		// Fetch state-wise districts
+		List<Object[]> stateDistrictRows = nodalOfficerRepository.findStateWiseDistricts(schemeId);
+
+		// Group districts state-wise
+		Map<String, List<String>> stateDistrictMap = new LinkedHashMap<>();
+
+		for (Object[] row : stateDistrictRows) {
+
+			String stateName = (String) row[0];
+			String districtName = (String) row[1];
+
+			stateDistrictMap.computeIfAbsent(stateName, key -> new ArrayList<>()).add(districtName);
+		}
+
+		// Convert into nested DTO
+		List<StateDistrictResponse> implementingStates = stateDistrictMap.entrySet().stream()
+				.map(entry -> new StateDistrictResponse(entry.getKey(), entry.getValue())).toList();
+
+		// Map nodal officers with state-wise districts
+		return officers.stream()
+				.map(officer -> new NodalOfficerDetailsDTO(officer.getOfficerName(), officer.getDesignation(),
+						officer.getEmail(), officer.getMobile(), officer.getAadhaarNumber(),
+						officer.getDateOfProposal(), officer.getExpectedCompletionDate(),
+						officer.getProposedFinancialOutlay(), officer.getSchemeDuration(), implementingStates))
+				.toList();
 	}
 
 }

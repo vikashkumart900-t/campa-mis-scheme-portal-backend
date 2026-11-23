@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +30,8 @@ public class ProposalTechnologyExitController {
 
 	// CREATE
 	@PostMapping(value = "/{schemeId}/tech-exit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<ProposalTechnologyExitResponse> create(@PathVariable Long schemeId,@Valid @RequestPart("request") String request,
+	public ResponseEntity<ProposalTechnologyExitResponse> create(@PathVariable Long schemeId,
+			@Valid @RequestPart("request") String request,
 
 			@RequestPart("technologicalDocument") MultipartFile technologicalDocument,
 
@@ -38,22 +40,15 @@ public class ProposalTechnologyExitController {
 		ProposalTechnologyExitRequest exitRequest = objectMapper.readValue(request,
 				ProposalTechnologyExitRequest.class);
 
-		return ResponseEntity
-				.ok(this.proposalTechnologyExitService.saveProposalTechExit(schemeId,exitRequest, technologicalDocument, exitProtocolDocument));
+		return ResponseEntity.ok(this.proposalTechnologyExitService.saveProposalTechExit(schemeId, exitRequest,
+				technologicalDocument, exitProtocolDocument));
 	}
 
-//	// GET BY ID
-//	@GetMapping("/{id}")
-//	public ResponseEntity<ProposalTechnologyExitResponse> getById(@PathVariable Long id) {
-//
-//		return ResponseEntity.ok(service.getById(id));
-//	}
-//
-//	// GET BY SCHEME ID
-//	@GetMapping("/scheme/{schemeId}")
-//	public ResponseEntity<List<ProposalTechnologyExitResponse>> getBySchemeId(@PathVariable Long schemeId) {
-//
-//		return ResponseEntity.ok(service.getBySchemeId(schemeId));
-//	}
+	// GET TECHNOLOGY EXIT DETAILS BY SCHEME ID
+	@GetMapping("/tech-exit/{schemeId}")
+	public ResponseEntity<ProposalTechnologyExitResponse> getProposalTechExit(@PathVariable Long schemeId) {
+
+		return ResponseEntity.ok(proposalTechnologyExitService.getProposalTechExitBySchemeId(schemeId));
+	}
 
 }

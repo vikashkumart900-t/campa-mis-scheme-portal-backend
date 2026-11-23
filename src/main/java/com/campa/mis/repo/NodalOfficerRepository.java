@@ -133,4 +133,26 @@ public interface NodalOfficerRepository extends JpaRepository<NodalOfficerEntity
 			""", nativeQuery = true)
 	List<NodalOfficerDetailsResponse> findNodalOfficerDetailsBySchemeId(@Param("schemeId") Long schemeId);
 
+	@Query(value = """
+			SELECT
+			    st.state_name AS "stateName",
+			    dt.district_name AS "districtName"
+			FROM mis_scheme.scheme_implementation_states sis
+
+			INNER JOIN mis_scheme.scheme_implementation_districts sid
+			    ON sid.scheme_implementation_state_id = sis.id
+
+			INNER JOIN mis_scheme.states st
+			    ON st.state_code = sis.state_code
+
+			INNER JOIN mis_scheme.districts dt
+			    ON dt.district_code = sid.district_code
+
+			WHERE sis.scheme_id = :schemeId
+
+			GROUP BY st.state_name, dt.district_name
+			ORDER BY st.state_name, dt.district_name
+			""", nativeQuery = true)
+	List<Object[]> findStateWiseDistricts(@Param("schemeId") Long schemeId);
+
 }

@@ -1,7 +1,6 @@
 package com.campa.mis.controller;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.campa.mis.dto.request.ObjectiveDetailsRequest;
-import com.campa.mis.dto.response.SchemeObjectivesResponse;
-import com.campa.mis.dto.response.StateFundingResponse;
+import com.campa.mis.dto.response.SchemeFundingObjectivesResponse;
 import com.campa.mis.service.SchemeObjectivesService;
 
 import lombok.RequiredArgsConstructor;
@@ -45,19 +43,14 @@ public class SchemeObjectivesController {
 		return ResponseEntity.ok(schemeObjectivesService.saveObjectivesDetails(schemeId, request, stateAgreementFile,
 				fundingDocumentFile));
 	}
+	
+	@GetMapping("/objectives/{schemeId}")
+	public ResponseEntity<SchemeFundingObjectivesResponse> getFundingAndObjectives(
+	        @PathVariable Long schemeId) {
 
-	// FETCH OBJECTIVES
-	@GetMapping("/{schemeId}/objectives")
-	public ResponseEntity<List<SchemeObjectivesResponse>> getObjectives(@PathVariable Long schemeId) {
-
-		return ResponseEntity.ok(this.schemeObjectivesService.getObjectives(schemeId));
-	}
-
-	// FETCH STATE AND FUNDING DETAILS
-	@GetMapping("/{schemeId}/state-funding")
-	public ResponseEntity<StateFundingResponse> getStateFunding(@PathVariable Long schemeId) {
-
-		return ResponseEntity.ok(this.schemeObjectivesService.getStateFunding(schemeId));
+	    return ResponseEntity.ok(
+	    		schemeObjectivesService.getFundingAndObjectives(schemeId)
+	    );
 	}
 
 }

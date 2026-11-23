@@ -41,7 +41,7 @@ public class SchemeEvaluationController {
 	}
 
 	// GET DETAILS
-	@GetMapping("/{schemeId}/evaluation-research")
+	@GetMapping("/evaluation-research/{schemeId}")
 	public ResponseEntity<EvaluationResearchResponse> getEvaluationResearch(@PathVariable Long schemeId) {
 
 		return ResponseEntity.ok(evaluationService.getEvaluationResearch(schemeId));
