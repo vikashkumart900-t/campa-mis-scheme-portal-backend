@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +29,7 @@ public class SchemeDocEmploymentDtlsServiceImpl implements SchemeDocEmploymentSe
 	private final SchemeCapacityBuildingRepository capacityRepository;
 	private final SchemeSupportingDocumentRepository documentRepository;
 	private final SchemeEmploymentGenerationRepository employmentRepository;
+	private static final Logger logger = LoggerFactory.getLogger(SchemeDocEmploymentDtlsServiceImpl.class);
 
 	@Override
 	@Transactional
@@ -58,7 +62,9 @@ public class SchemeDocEmploymentDtlsServiceImpl implements SchemeDocEmploymentSe
 			throw new IllegalArgumentException("Document metadata count must match uploaded files count");
 		}
 
-		this.documentRepository.deleteBySchemeId(schemeId);
+		int deletedCount = documentRepository.deleteBySchemeId(schemeId);
+
+		logger.info("Deleted {} documents for schemeId: {}", deletedCount, schemeId);
 
 		// 1. SAVE / UPDATE KML FILES
 		for (int i = 0; i < uploadedKmlFiles.size(); i++) {

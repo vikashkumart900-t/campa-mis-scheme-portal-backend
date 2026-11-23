@@ -40,7 +40,6 @@ public class SchemeSupportingDocumentEntity {
 	@Column(name = "content_type")
 	private String contentType;
 
-	@Lob
 	@Column(name = "file_data", columnDefinition = "BYTEA")
 	private byte[] fileData;
 

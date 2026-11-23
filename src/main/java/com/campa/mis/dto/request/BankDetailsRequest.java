@@ -3,7 +3,9 @@ package com.campa.mis.dto.request;
 import java.util.List;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 
 public record BankDetailsRequest(
 
@@ -21,7 +23,7 @@ public record BankDetailsRequest(
     @NotBlank
     String branchNameAddress,
 
-    @NotBlank
+    @NotBlank(message = "Account number is required")
     String accountNumber,
 
     @NotEmpty

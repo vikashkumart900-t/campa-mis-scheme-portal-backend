@@ -6,10 +6,10 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "proposal_technology_exit", schema = "mis_scheme")
+@Table(name = "scheme_tech_exit", schema = "mis_scheme")
 @Getter
 @Setter
-public class ProposalTechnologyExitEntity {
+public class SchemeTechnologyExitEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

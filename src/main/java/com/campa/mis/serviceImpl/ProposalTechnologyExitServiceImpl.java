@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import com.campa.mis.dto.request.ProposalTechnologyExitRequest;
 import com.campa.mis.dto.response.ProposalTechnologyExitResponse;
-import com.campa.mis.entity.ProposalTechnologyExitEntity;
+import com.campa.mis.entity.SchemeTechnologyExitEntity;
 import com.campa.mis.repo.ProposalTechnologyExitRepository;
 import com.campa.mis.service.ProposalTechnologyExitService;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,8 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 		validateFile(technologicalDocument);
 		validateFile(exitProtocolDocument);
 
-		ProposalTechnologyExitEntity technologyExitEntity = this.technologyExitRepository.findBySchemeId(schemeId)
-				.orElseGet(ProposalTechnologyExitEntity::new);
+		SchemeTechnologyExitEntity technologyExitEntity = this.technologyExitRepository.findBySchemeId(schemeId)
+				.orElseGet(SchemeTechnologyExitEntity::new);
 
 		technologyExitEntity.setSchemeId(schemeId);
 
@@ -58,7 +58,7 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 			e.printStackTrace();
 		}
 
-		ProposalTechnologyExitEntity savedEntity = this.technologyExitRepository.save(technologyExitEntity);
+		SchemeTechnologyExitEntity savedEntity = this.technologyExitRepository.save(technologyExitEntity);
 
 		return mapToResponse(savedEntity, schemeId);
 	}
@@ -76,7 +76,7 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 	}
 
 	// ENTITY TO RESPONSE DTO
-	private ProposalTechnologyExitResponse mapToResponse(ProposalTechnologyExitEntity technologyExitEntity,
+	private ProposalTechnologyExitResponse mapToResponse(SchemeTechnologyExitEntity technologyExitEntity,
 			Long schemeId) {
 
 		return new ProposalTechnologyExitResponse(technologyExitEntity.getId(), schemeId,

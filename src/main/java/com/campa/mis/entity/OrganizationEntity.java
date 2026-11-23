@@ -28,10 +28,10 @@ public class OrganizationEntity {
     private String organizationType;
 
     @Column(name = "state_code")
-    private Long stateCode;
+    private String stateCode;
 
     @Column(name = "district_code")
-    private Long districtCode;
+    private String districtCode;
 
     @Column(name = "submitted_at", nullable = false)
     private OffsetDateTime submittedAt;

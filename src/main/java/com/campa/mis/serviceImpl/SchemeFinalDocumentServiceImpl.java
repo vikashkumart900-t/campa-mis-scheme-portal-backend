@@ -2,14 +2,22 @@
 package com.campa.mis.serviceImpl;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.campa.mis.dto.request.SchemeRoleStatusUpdateRequest;
 import com.campa.mis.dto.response.SchemeFinalDocumentResponse;
 import com.campa.mis.entity.SchemeFinalDocumentEntity;
+import com.campa.mis.entity.SchemeRoleStatusEntity;
 import com.campa.mis.repo.SchemeFinalDocumentRepository;
+import com.campa.mis.repo.SchemeRoleStatusRepository;
 import com.campa.mis.service.SchemeFinalDocumentService;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class SchemeFinalDocumentServiceImpl implements SchemeFinalDocumentService {
 
 	private final SchemeFinalDocumentRepository finalDocumentRepository;
+	private final SchemeRoleStatusRepository schemeRoleStatusRepository;
 
 	// POST: SAVE / UPDATE DOCUMENTS
 	@Override
@@ -60,6 +69,15 @@ public class SchemeFinalDocumentServiceImpl implements SchemeFinalDocumentServic
 
 			SchemeFinalDocumentEntity saved = this.finalDocumentRepository.save(document);
 
+			// Save / Update Scheme Role Status
+			SchemeRoleStatusEntity roleStatus = schemeRoleStatusRepository.findBySchemeId(schemeId)
+					.orElseGet(() -> SchemeRoleStatusEntity.builder().schemeId(schemeId).hodStatus("PENDING")
+							.pdStatus("PENDING").campaStatus("PENDING").createdAt(LocalDateTime.now()).build());
+
+			roleStatus.setUpdatedAt(LocalDateTime.now());
+
+			schemeRoleStatusRepository.save(roleStatus);
+
 			return mapResponse(saved);
 
 		} catch (IOException e) {
@@ -91,4 +109,56 @@ public class SchemeFinalDocumentServiceImpl implements SchemeFinalDocumentServic
 				document.getSignatureFileName(), document.getSignatureFileData(), document.getSupportingDocumentName(),
 				document.getSupportingDocumentData(), document.getUploadedAt());
 	}
+
+	@Override
+	public SchemeRoleStatusEntity getSchemeRoleStatusById(Long schemeId) {
+
+		return this.schemeRoleStatusRepository.findBySchemeId(schemeId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+						"Scheme role status not found for scheme ID: " + schemeId));
+	}
+
+	@Override
+	@Transactional
+	public SchemeRoleStatusEntity updateSchemeRoleStatus(SchemeRoleStatusUpdateRequest request) {
+
+		SchemeRoleStatusEntity roleStatusEntity = this.schemeRoleStatusRepository.findBySchemeId(request.schemeId())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scheme role status not found"));
+
+		String status = request.status().toUpperCase();
+		String roleCode = request.roleCode().toUpperCase();
+
+		if (!Set.of("APPROVED", "REVERTED").contains(status)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
+		}
+
+		switch (roleCode) {
+
+		case "HOD":
+			roleStatusEntity.setHodStatus(status);
+			break;
+
+		case "PD":
+			roleStatusEntity.setPdStatus(status);
+			break;
+
+		case "NATIONAL_CAMPA":
+			roleStatusEntity.setCampaStatus(status);
+			break;
+
+		default:
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role code");
+		}
+
+		roleStatusEntity.setUpdatedAt(LocalDateTime.now());
+		roleStatusEntity.setRemarks(request.remarks());
+
+		return schemeRoleStatusRepository.save(roleStatusEntity);
+	}
+
+	@Override
+	public List<SchemeRoleStatusEntity> getSchemeRoleStatus() {
+		return this.schemeRoleStatusRepository.findAll();
+	}
+
 }

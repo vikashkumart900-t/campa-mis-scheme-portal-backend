@@ -1,16 +1,22 @@
 package com.campa.mis.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
+import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.response.ApiResponse;
+import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
+import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.security.JwtService;
 import com.campa.mis.service.SchemeService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -73,6 +79,25 @@ public class SchemeImplementationController {
 				.saveNodalOfficerData(request);
 
 		return ResponseEntity.ok(nodalOfficerRegistrationRequestDTO);
+	}
+
+	// GET Nodal Officer Details By Scheme ID
+	@GetMapping("/nodal-officer/{schemeId}")
+	public ResponseEntity<List<NodalOfficerDetailsResponse>> getNodalOfficerDetails(@PathVariable Long schemeId) {
+
+		return ResponseEntity.ok(schemeService.getNodalOfficerDetailsBySchemeId(schemeId));
+	}
+
+	@GetMapping("/getListingProposalById/{schemeId}")
+	public ResponseEntity<ProposalListingProjectionResponse> getProposalDetailsById(@PathVariable Long schemeId) {
+
+		return ResponseEntity.ok(this.schemeService.getProposalDetailsById(schemeId));
+	}
+
+	@GetMapping("/getAllIAProposal")
+	public ResponseEntity<List<ProposalListingProjectionResponse>> getAllProposalDetails() {
+
+		return ResponseEntity.ok(schemeService.getAllProposalDetails());
 	}
 
 }

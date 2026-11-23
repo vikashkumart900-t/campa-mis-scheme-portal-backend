@@ -11,12 +11,15 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -29,7 +32,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,12 +40,13 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
+import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.request.RegistrationRequestDTO;
 import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
+import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
 import com.campa.mis.dto.response.UserAccountProjection;
@@ -62,7 +65,6 @@ import com.campa.mis.repo.NodalOfficerRepository;
 import com.campa.mis.repo.OrganizationRepository;
 import com.campa.mis.repo.PasswordResetRequestRepository;
 import com.campa.mis.repo.ProgramDivisionRepository;
-import com.campa.mis.repo.ProposalTechnologyExitRepository;
 import com.campa.mis.repo.SchemeImplementationDistrictRepository;
 import com.campa.mis.repo.SchemeImplementationStateRepository;
 import com.campa.mis.repo.SchemeRepository;
@@ -73,7 +75,7 @@ import com.campa.mis.repo.UserRoleRepository;
 import com.campa.mis.security.JwtService;
 import com.campa.mis.service.EmailService;
 import com.campa.mis.service.SchemeService;
-import lombok.AllArgsConstructor;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -201,54 +203,88 @@ public class SchemeServiceImpl implements SchemeService {
 
 		this.nodalOfficerRepository.save(officerEntity);
 
-		// 5. Process multiple states and their districts
+		Long schemeId = request.schemeId();
 
+		// 1. Fetch existing state mappings
+		List<SchemeImplementationStateEntity> existingStates = schemeImplementationStateRepository
+				.findBySchemeId(schemeId);
+
+		// 2. Track incoming state codes
+		Set<String> selectedStateCodes = new HashSet<>();
+
+		// 3. Process states received from frontend
 		for (NodalOfficerRegistrationRequestDTO.StateDistrictRequestDTO stateRequest : request.stateDistricts()) {
 
 			String stateCode = stateRequest.stateCode().trim();
 
-			// Validate state
+			if (!selectedStateCodes.add(stateCode)) {
+				throw new IllegalArgumentException("Duplicate state code: " + stateCode);
+			}
 
-			this.stateRepository.findByStateCode(stateCode)
+			// Validate state
+			stateRepository.findByStateCode(stateCode)
 					.orElseThrow(() -> new IllegalArgumentException("Invalid state code: " + stateCode));
 
-			// Remove duplicate district codes
-			List<String> districtCodes = stateRequest.districtCodes().stream().map(String::trim).distinct().toList();
+			// Get distinct district codes
+			Set<String> incomingDistrictCodes = stateRequest.districtCodes() == null ? Set.of()
+					: stateRequest.districtCodes().stream().map(String::trim).collect(Collectors.toSet());
 
-			// 6. Find existing scheme-state mapping
+			// 4. Find existing state mapping, otherwise insert new
 			SchemeImplementationStateEntity stateEntity = schemeImplementationStateRepository
-					.findBySchemeIdAndStateCode(request.schemeId(), stateCode).orElse(null);
+					.findBySchemeIdAndStateCode(schemeId, stateCode).orElseGet(() -> {
+						SchemeImplementationStateEntity entity = new SchemeImplementationStateEntity();
+						entity.setSchemeId(schemeId);
+						entity.setStateCode(stateCode);
 
-			// 7. Create scheme-state mapping if not exists
-			if (stateEntity == null) {
-
-				stateEntity = new SchemeImplementationStateEntity();
-
-				stateEntity.setSchemeId(request.schemeId());
-				stateEntity.setStateCode(stateCode);
-
-				stateEntity = this.schemeImplementationStateRepository.save(stateEntity);
-			}
+						return schemeImplementationStateRepository.save(entity);
+					});
 
 			Long stateMappingId = stateEntity.getId();
 
-			// 8. Save multiple district mappings
+			// 5. Fetch existing district mappings
+			List<SchemeImplementationDistrictEntity> existingDistricts = schemeImplementationDistrictRepository
+					.findBySchemeImplementationStateId(stateMappingId);
 
-			for (String districtCode : districtCodes) {
+			// 6. Identify existing district codes
+			Set<String> existingDistrictCodes = existingDistricts.stream()
+					.map(SchemeImplementationDistrictEntity::getDistrictCode).collect(Collectors.toSet());
 
-				boolean alreadyExists = this.schemeImplementationDistrictRepository
-						.existsBySchemeImplementationStateIdAndDistrictCode(stateMappingId, districtCode);
+			// 7. Delete only districts removed by user
+			List<Long> removedDistrictIds = existingDistricts.stream()
+					.filter(d -> !incomingDistrictCodes.contains(d.getDistrictCode()))
+					.map(SchemeImplementationDistrictEntity::getId).toList();
 
-				if (!alreadyExists) {
+			if (!removedDistrictIds.isEmpty()) {
+				schemeImplementationDistrictRepository.deleteAllByIdInBatch(removedDistrictIds);
+			}
+
+			// 8. Insert only newly selected districts
+			for (String districtCode : incomingDistrictCodes) {
+
+				if (!existingDistrictCodes.contains(districtCode)) {
 
 					SchemeImplementationDistrictEntity districtEntity = new SchemeImplementationDistrictEntity();
 
 					districtEntity.setSchemeImplementationStateId(stateMappingId);
 					districtEntity.setDistrictCode(districtCode);
 
-					this.schemeImplementationDistrictRepository.save(districtEntity);
+					schemeImplementationDistrictRepository.save(districtEntity);
 				}
 			}
+		}
+
+		// 9. Identify states removed by user
+		List<Long> removedStateIds = existingStates.stream().filter(s -> !selectedStateCodes.contains(s.getStateCode()))
+				.map(SchemeImplementationStateEntity::getId).toList();
+
+		// 10. Delete child districts first, then parent states
+		if (!removedStateIds.isEmpty()) {
+
+			schemeImplementationDistrictRepository.deleteBySchemeImplementationStateIdIn(removedStateIds);
+
+			schemeImplementationDistrictRepository.flush();
+
+			schemeImplementationStateRepository.deleteAllByIdInBatch(removedStateIds);
 		}
 
 		return request;
@@ -632,4 +668,33 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new IllegalStateException("SHA-256 algorithm not available", ex);
 		}
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public ProposalListingProjectionResponse getProposalDetailsById(Long schemeId) {
+
+		return nodalOfficerRepository.findProposalDetailsBySchemeId(schemeId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+						"Proposal not found for schemeId: " + schemeId));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<ProposalListingProjectionResponse> getAllProposalDetails() {
+		return nodalOfficerRepository.findAllProposalDetails();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<NodalOfficerDetailsResponse> getNodalOfficerDetailsBySchemeId(Long schemeId) {
+
+		List<NodalOfficerDetailsResponse> response = nodalOfficerRepository.findNodalOfficerDetailsBySchemeId(schemeId);
+
+		if (response.isEmpty()) {
+			throw new RuntimeException("Nodal officer details not found for scheme ID: " + schemeId);
+		}
+
+		return response;
+	}
+
 }

@@ -38,11 +38,8 @@ import jakarta.validation.Valid;
 public class SchemeController {
 
 	private final SchemeService schemeService;
-	private final JwtService jwtService;
-
 	public SchemeController(SchemeService schemeService, JwtService jwtService) {
 		this.schemeService = schemeService;
-		this.jwtService = jwtService;
 	}
 
 	// Dropdown data

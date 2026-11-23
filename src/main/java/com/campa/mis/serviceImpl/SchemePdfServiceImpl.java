@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,9 +61,6 @@ public class SchemePdfServiceImpl implements SchemePdfService {
 			// REPORT HEADER
 			writer.addReportTitle(schemeName);
 
-			// REPORT SECTIONS
-			int sectionNumber = 1;
-
 			for (Map.Entry<String, List<Map<String, Object>>> section : sections.entrySet()) {
 
 				writer.addSectionHeading(section.getKey());
@@ -91,8 +87,6 @@ public class SchemePdfServiceImpl implements SchemePdfService {
 
 					writer.addRecordSpacing();
 				}
-
-				sectionNumber++;
 			}
 
 			// CLOSE CURRENT PAGE
@@ -199,15 +193,16 @@ public class SchemePdfServiceImpl implements SchemePdfService {
 
 			ensureSpace(115);
 
-			writeText("CAMPA SCHEME PROPOSAL", PDType1Font.HELVETICA_BOLD, 17, NAVY);
+			// writeText("CAMPA SCHEME PROPOSAL", PDType1Font.HELVETICA_BOLD, 17, NAVY);
 
 			y -= 5;
 
-			writeText("Complete Scheme Information Report", PDType1Font.HELVETICA, 10, BLUE);
+			// writeText("Complete Scheme Information Report", PDType1Font.HELVETICA, 10,
+			// BLUE);
 
 			y -= 8;
 
-			drawInformationBox("Scheme-Name", String.valueOf(schemeName), "","");
+			drawInformationBox("Scheme-Name", String.valueOf(schemeName), "", "");
 
 			y -= 15;
 		}
@@ -366,7 +361,6 @@ public class SchemePdfServiceImpl implements SchemePdfService {
 			alternateRow = !alternateRow;
 		}
 
-		// WRAP TEXT
 		private List<String> wrapText(String text, PDFont font, float fontSize, float maxWidth) throws IOException {
 
 			List<String> lines = new ArrayList<>();
@@ -376,65 +370,78 @@ public class SchemePdfServiceImpl implements SchemePdfService {
 				return lines;
 			}
 
-			StringBuilder line = new StringBuilder();
+			// First split by actual newline
+			String[] paragraphs = text.split("\\r?\\n", -1);
 
-			String[] words = text.split("\\s+");
+			for (String paragraph : paragraphs) {
 
-			for (String word : words) {
-
-				if (font.getStringWidth(word) / 1000 * fontSize > maxWidth) {
-
-					if (line.length() > 0) {
-						lines.add(line.toString());
-						line.setLength(0);
-					}
-
-					StringBuilder part = new StringBuilder();
-
-					for (char ch : word.toCharArray()) {
-
-						String candidate = part.toString() + ch;
-
-						if (font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
-
-							if (part.length() > 0) {
-								lines.add(part.toString());
-								part.setLength(0);
-							}
-						}
-
-						part.append(ch);
-					}
-
-					if (part.length() > 0) {
-						line.append(part);
-					}
-
+				// Preserve empty lines
+				if (paragraph.isBlank()) {
+					lines.add("");
 					continue;
 				}
 
-				String candidate = line.length() == 0 ? word : line + " " + word;
+				StringBuilder line = new StringBuilder();
 
-				if (font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
+				String[] words = paragraph.trim().split("\\s+");
 
-					lines.add(line.toString());
+				for (String word : words) {
 
-					line.setLength(0);
+					if (font.getStringWidth(word) / 1000 * fontSize > maxWidth) {
 
-					line.append(word);
+						if (line.length() > 0) {
+							lines.add(line.toString());
+							line.setLength(0);
+						}
 
-				} else {
+						StringBuilder part = new StringBuilder();
 
-					if (line.length() > 0) {
-						line.append(" ");
+						for (char ch : word.toCharArray()) {
+
+							String candidate = part.toString() + ch;
+
+							if (font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
+
+								if (part.length() > 0) {
+									lines.add(part.toString());
+									part.setLength(0);
+								}
+							}
+
+							part.append(ch);
+						}
+
+						if (part.length() > 0) {
+							line.append(part);
+						}
+
+						continue;
 					}
 
-					line.append(word);
-				}
-			}
+					String candidate = line.length() == 0 ? word : line + " " + word;
 
-			if (line.length() > 0) {
-				lines.add(line.toString());
+					if (font.getStringWidth(candidate) / 1000 * fontSize > maxWidth) {
+
+						if (line.length() > 0) {
+							lines.add(line.toString());
+						}
+
+						line.setLength(0);
+						line.append(word);
+
+					} else {
+
+						if (line.length() > 0) {
+							line.append(" ");
+						}
+
+						line.append(word);
+					}
+				}
+
+				if (line.length() > 0) {
+					lines.add(line.toString());
+				}
 			}
 
 			if (lines.isEmpty()) {

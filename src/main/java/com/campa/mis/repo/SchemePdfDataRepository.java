@@ -1,11 +1,13 @@
 package com.campa.mis.repo;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
@@ -18,15 +20,68 @@ public class SchemePdfDataRepository {
 		Map<String, List<Map<String, Object>>> sections = new LinkedHashMap<>();
 
 		// 1. Nodal Officer
+//		sections.put("1. Nodal Officer Details", jdbcTemplate.queryForList("""
+//				SELECT
+//				       officer_name, designation, email, mobile,
+//				       aadhaar_number, date_of_proposal,
+//				       expected_completion_date,
+//				       proposed_financial_outlay, scheme_duration
+//				FROM mis_scheme.nodal_officers
+//				WHERE scheme_id = ?
+//				ORDER BY nodal_officer_id
+//				""", schemeId));
+
+		// 1. Nodal Officer Details
 		sections.put("1. Nodal Officer Details", jdbcTemplate.queryForList("""
 				SELECT
-				       officer_name, designation, email, mobile,
-				       aadhaar_number, date_of_proposal,
-				       expected_completion_date,
-				       proposed_financial_outlay, scheme_duration
-				FROM mis_scheme.nodal_officers
-				WHERE scheme_id = ?
-				ORDER BY nodal_officer_id
+				    ndo.officer_name,
+				    ndo.designation,
+				    ndo.email,
+				    ndo.mobile,
+				    ndo.aadhaar_number,
+				    ndo.date_of_proposal,
+				    ndo.expected_completion_date,
+				    ndo.proposed_financial_outlay,
+				    ndo.scheme_duration,
+
+				    (
+				        SELECT STRING_AGG(
+				            state_group.state_name || ': ' || state_group.district_names,
+				            E'\n'
+				            ORDER BY state_group.state_name
+				        )
+				        FROM (
+				            SELECT
+				                st.state_name,
+				                STRING_AGG(
+				                    DISTINCT dt.district_name,
+				                    ', '
+				                    ORDER BY dt.district_name
+				                ) AS district_names
+
+				            FROM mis_scheme.scheme_implementation_states sis
+
+				            INNER JOIN mis_scheme.scheme_implementation_districts sid
+				                ON sid.scheme_implementation_state_id = sis.id
+
+				            INNER JOIN mis_scheme.states st
+				                ON st.state_code = sis.state_code
+
+				            INNER JOIN mis_scheme.districts dt
+				                ON dt.district_code = sid.district_code
+
+				            WHERE sis.scheme_id = ndo.scheme_id
+
+				            GROUP BY st.state_name
+
+				        ) state_group
+				    ) AS Scheme_Implementing_Sates
+
+				FROM mis_scheme.nodal_officers ndo
+
+				WHERE ndo.scheme_id = ?
+
+				ORDER BY ndo.nodal_officer_id
 				""", schemeId));
 
 		// 2. Scheme Objectives
@@ -139,7 +194,7 @@ public class SchemePdfDataRepository {
 				       technological_document_name,
 				       exit_protocol_description,
 				       exit_protocol_document_name
-				FROM mis_scheme.proposal_technology_exit
+				FROM mis_scheme.scheme_tech_exit
 				WHERE scheme_id = ?
 				ORDER BY id
 				""", schemeId));
