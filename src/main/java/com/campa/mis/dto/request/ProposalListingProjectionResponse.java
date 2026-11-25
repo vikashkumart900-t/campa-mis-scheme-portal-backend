@@ -1,6 +1,7 @@
 package com.campa.mis.dto.request;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public interface ProposalListingProjectionResponse {
 
@@ -19,4 +20,6 @@ public interface ProposalListingProjectionResponse {
     String getPdStatus();
 
     String getCampaStatus();
+    
+    LocalDateTime getSubmissionDate();
 }

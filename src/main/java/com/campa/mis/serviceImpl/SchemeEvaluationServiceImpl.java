@@ -133,6 +133,6 @@ public class SchemeEvaluationServiceImpl implements SchemeEvaluationService {
 
 		return new EvaluationResearchResponse(entity.getId(), entity.getSchemeId(), entity.getEvaluationType(),
 				entity.getEvaluationDetails(), entity.getDocumentFileName(), entity.getDocumentContentType(),
-				entity.getResearchAspects(), entity.getUniqueHighlights());
+				entity.getResearchAspects(), entity.getUniqueHighlights(), entity.getSupportingDocument());
 	}
 }

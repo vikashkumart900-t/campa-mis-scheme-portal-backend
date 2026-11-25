@@ -18,7 +18,7 @@ public class BankDetailsServiceImpl implements BankDetailsService {
 
 	private final BankDetailRepository bankDetailsRepository;
 
-	// CREATE
+	// SAVE OR UPDATE
 	@Transactional
 	public BankDetailsResponse saveBankDetails(BankDetailsRequest request, Long schemeId) {
 
@@ -54,55 +54,6 @@ public class BankDetailsServiceImpl implements BankDetailsService {
 		return mapToResponse(savedBank);
 	}
 
-	// GET BY ID
-	@Transactional(readOnly = true)
-	public BankDetailsResponse getBankDetails(Integer bankId) {
-
-		BankDetailsEntity bank = bankDetailsRepository.findById(bankId)
-				.orElseThrow(() -> new RuntimeException("Bank details not found for ID: " + bankId));
-
-		return mapToResponse(bank);
-	}
-
-	// GET ALL
-	@Transactional(readOnly = true)
-	public List<BankDetailsResponse> getAllBankDetails() {
-
-		return bankDetailsRepository.findAll().stream().map(this::mapToResponse).toList();
-	}
-
-	// UPDATE
-	@Transactional
-	public BankDetailsResponse updateBankDetails(Integer bankId, BankDetailsRequest request) {
-
-		BankDetailsEntity bank = bankDetailsRepository.findById(bankId)
-				.orElseThrow(() -> new RuntimeException("Bank details not found for ID: " + bankId));
-
-		bank.setAccountName(request.accountName().trim());
-		bank.setBankName(request.bankName().trim());
-		bank.setIfscCode(request.ifscCode().trim().toUpperCase());
-		bank.setBranchNameAddress(request.branchNameAddress().trim());
-		bank.setAccountNumber(request.accountNumber().trim());
-
-		// Remove existing installments
-		bank.getInstallments().clear();
-
-		// Insert updated installments
-		for (InstallmentRequest installmentRequest : request.installments()) {
-
-			InstallmentEntity installment = new InstallmentEntity();
-
-			installment.setFinancialYear(installmentRequest.financialYear());
-			installment.setInstallmentNo(installmentRequest.installmentNo());
-			installment.setDuration(installmentRequest.duration());
-			installment.setAmountInLakh(installmentRequest.amountInLakh());
-
-			bank.addInstallment(installment);
-		}
-
-		return mapToResponse(bank);
-	}
-
 	// ENTITY TO RESPONSE MAPPING
 	private BankDetailsResponse mapToResponse(BankDetailsEntity bank) {
 
@@ -116,4 +67,23 @@ public class BankDetailsServiceImpl implements BankDetailsService {
 				bank.getBranchNameAddress(), bank.getAccountNumber(), bank.getCreatedAt(), bank.getUpdatedAt(),
 				installmentResponses);
 	}
+
+	// GET ALL
+	@Transactional(readOnly = true)
+	public List<BankDetailsResponse> getAllBankDetails() {
+
+		return bankDetailsRepository.findAll().stream().map(this::mapToResponse).toList();
+	}
+
+	// FETCH BANK DETAILS BY SCHEME ID
+	@Override
+	@Transactional(readOnly = true)
+	public BankDetailsResponse getBankDetails(Long schemeId) {
+
+		BankDetailsEntity bankDetailsEntity = bankDetailsRepository.findBySchemeId(schemeId)
+				.orElseThrow(() -> new RuntimeException("Bank details not found for scheme ID: " + schemeId));
+
+		return mapToResponse(bankDetailsEntity);
+	}
+
 }

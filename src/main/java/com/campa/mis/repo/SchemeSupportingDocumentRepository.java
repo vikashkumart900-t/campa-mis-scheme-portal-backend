@@ -1,5 +1,6 @@
 package com.campa.mis.repo;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,5 +21,7 @@ public interface SchemeSupportingDocumentRepository extends JpaRepository<Scheme
 	@Transactional
 	@Query("DELETE FROM SchemeSupportingDocumentEntity d WHERE d.schemeId = :schemeId")
 	int deleteBySchemeId(@Param("schemeId") Long schemeId);
+	
+	List<SchemeSupportingDocumentEntity> findBySchemeIdOrderByIdAsc(Long schemeId);
 
 }

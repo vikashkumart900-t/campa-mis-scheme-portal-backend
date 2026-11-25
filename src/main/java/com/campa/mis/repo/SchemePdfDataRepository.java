@@ -130,8 +130,7 @@ public class SchemePdfDataRepository {
 				       d.deliverable, d.unit,
 				       d.initiation_date, d.closing_date,
 				       d.financial_outlay, d.remarks,
-				       d.document_file_name,
-				       d.document_file_path
+				       d.document_file_name
 				FROM mis_scheme.scheme_deliverables d
 				JOIN mis_scheme.scheme_deliverable_details dd
 				  ON dd.id = d.deliverable_details_id

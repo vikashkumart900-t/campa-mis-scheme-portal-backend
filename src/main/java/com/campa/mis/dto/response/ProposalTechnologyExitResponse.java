@@ -8,6 +8,7 @@ public record ProposalTechnologyExitResponse(Long id, Long schemeId,
 
 		String exitProtocolDescription, String exitProtocolDocumentName, String exitProtocolDocumentType,
 
-		LocalDateTime createdAt, LocalDateTime updatedAt) {
+		LocalDateTime createdAt, LocalDateTime updatedAt, byte[] technologicalDocumentData,
+		byte[] exitProtocolDocumentData) {
 
 }

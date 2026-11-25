@@ -91,7 +91,9 @@ public class ProposalTechnologyExitServiceImpl implements ProposalTechnologyExit
 				technologyExitEntity.getExitProtocolDescription(), technologyExitEntity.getExitProtocolDocumentName(),
 				technologyExitEntity.getExitProtocolDocumentType(),
 
-				technologyExitEntity.getCreatedAt(), technologyExitEntity.getUpdatedAt());
+				technologyExitEntity.getCreatedAt(), technologyExitEntity.getUpdatedAt(),
+				technologyExitEntity.getTechnologicalDocumentData(),
+				technologyExitEntity.getExitProtocolDocumentData());
 	}
 
 	@Override

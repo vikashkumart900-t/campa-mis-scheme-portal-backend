@@ -74,8 +74,6 @@ public class SchemeFinalDocumentServiceImpl implements SchemeFinalDocumentServic
 					.orElseGet(() -> SchemeRoleStatusEntity.builder().schemeId(schemeId).hodStatus("PENDING")
 							.pdStatus("PENDING").campaStatus("PENDING").createdAt(LocalDateTime.now()).build());
 
-			roleStatus.setUpdatedAt(LocalDateTime.now());
-
 			schemeRoleStatusRepository.save(roleStatus);
 
 			return mapResponse(saved);
@@ -122,36 +120,61 @@ public class SchemeFinalDocumentServiceImpl implements SchemeFinalDocumentServic
 	@Transactional
 	public SchemeRoleStatusEntity updateSchemeRoleStatus(SchemeRoleStatusUpdateRequest request) {
 
-		SchemeRoleStatusEntity roleStatusEntity = this.schemeRoleStatusRepository.findBySchemeId(request.schemeId())
+		SchemeRoleStatusEntity roleStatusEntity = schemeRoleStatusRepository.findBySchemeId(request.schemeId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Scheme role status not found"));
 
-		String status = request.status().toUpperCase();
-		String roleCode = request.roleCode().toUpperCase();
+		if (request.status() == null || request.roleCode() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role code and status are required");
+		}
+
+		String status = request.status().toUpperCase().trim();
+		String roleCode = request.roleCode().toUpperCase().trim();
 
 		if (!Set.of("APPROVED", "REVERTED").contains(status)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
 		}
 
+		// Sequential approval validation
 		switch (roleCode) {
 
 		case "HOD":
+			// HOD is the first approval level
 			roleStatusEntity.setHodStatus(status);
+			roleStatusEntity.setHodRemarks(request.hodRemarks());
+			roleStatusEntity.setHodUpdatedAt(LocalDateTime.now());
 			break;
 
 		case "PD":
+
+			// HOD must approve first
+			if (!"APPROVED".equalsIgnoreCase(roleStatusEntity.getHodStatus())) {
+
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PD can take action only after HOD approval");
+			}
+
 			roleStatusEntity.setPdStatus(status);
+			roleStatusEntity.setPdRemarks(request.pdRemarks());
+			roleStatusEntity.setPdUpdatedAt(LocalDateTime.now());
 			break;
 
 		case "NATIONAL_CAMPA":
+
+			// HOD must approve
+			if (!"APPROVED".equalsIgnoreCase(roleStatusEntity.getHodStatus())
+					&& !"APPROVED".equalsIgnoreCase(roleStatusEntity.getPdStatus())) {
+
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+						"CAMPA can take action only after HOD and PD approval");
+			}
+
 			roleStatusEntity.setCampaStatus(status);
+			roleStatusEntity.setCampaRemarks(request.campaRemarks());
+			roleStatusEntity.setCampaUpdatedAt(LocalDateTime.now());
 			break;
 
 		default:
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role code");
 		}
-
-		roleStatusEntity.setUpdatedAt(LocalDateTime.now());
-		roleStatusEntity.setRemarks(request.remarks());
 
 		return schemeRoleStatusRepository.save(roleStatusEntity);
 	}

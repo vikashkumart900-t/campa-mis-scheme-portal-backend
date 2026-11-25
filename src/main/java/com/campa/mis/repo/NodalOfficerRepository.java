@@ -35,7 +35,8 @@ public interface NodalOfficerRepository extends JpaRepository<NodalOfficerEntity
 
 			        srs.hodStatus AS hodStatus,
 			        srs.pdStatus AS pdStatus,
-			        srs.campaStatus AS campaStatus
+			        srs.campaStatus AS campaStatus,
+			        srs.createdAt AS submissionDate
 
 			    FROM NodalOfficerEntity ndo
 

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.campa.mis.dto.request.SchemeSupportingRequest;
+import com.campa.mis.dto.response.SchemeSupportingResponse;
 import com.campa.mis.service.SchemeDocEmploymentService;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
@@ -31,8 +33,16 @@ public class SchemeDocEmploymentController {
 
 		SchemeSupportingRequest request = objectMapper.readValue(requestJson, SchemeSupportingRequest.class);
 
-		SchemeSupportingRequest  resDocumentDetailsResponse=this.docEmploymentService.saveDocEmploymentDetails(schemeId, request, kmlFiles, pngFiles);
+		SchemeSupportingRequest resDocumentDetailsResponse = this.docEmploymentService
+				.saveDocEmploymentDetails(schemeId, request, kmlFiles, pngFiles);
 
 		return ResponseEntity.ok(resDocumentDetailsResponse);
+	}
+
+	// GET DOCUMENT AND EMPLOYMENT DETAILS BY SCHEME ID
+	@GetMapping("/document-details/{schemeId}")
+	public ResponseEntity<SchemeSupportingResponse> getDocumentsEmploymentDetails(@PathVariable Long schemeId) {
+
+		return ResponseEntity.ok(this.docEmploymentService.getDocEmploymentDetails(schemeId));
 	}
 }

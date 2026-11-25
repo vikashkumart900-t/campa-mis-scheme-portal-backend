@@ -30,13 +30,6 @@ public class BankDetailsController {
 		return ResponseEntity.ok(bankDetailsService.saveBankDetails(request, schemeId));
 	}
 
-	// GET BY ID
-	@GetMapping("/{bankId}")
-	public ResponseEntity<BankDetailsResponse> getBankDetails(@PathVariable Integer bankId) {
-
-		return ResponseEntity.ok(bankDetailsService.getBankDetails(bankId));
-	}
-
 	// GET ALL
 	@GetMapping
 	public ResponseEntity<List<BankDetailsResponse>> getAllBankDetails() {
@@ -44,12 +37,11 @@ public class BankDetailsController {
 		return ResponseEntity.ok(bankDetailsService.getAllBankDetails());
 	}
 
-	// UPDATE
-	@PutMapping("/{bankId}")
-	public ResponseEntity<BankDetailsResponse> updateBankDetails(@PathVariable Integer bankId,
-			@Valid @RequestBody BankDetailsRequest request) {
+	// FETCH BANK DETAILS BY SCHEME ID
+	@GetMapping("/bank-details/{schemeId}")
+	public ResponseEntity<BankDetailsResponse> getBankDetails(@PathVariable Long schemeId) {
 
-		return ResponseEntity.ok(bankDetailsService.updateBankDetails(bankId, request));
+		return ResponseEntity.ok(bankDetailsService.getBankDetails(schemeId));
 	}
 
 }

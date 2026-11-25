@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 import com.campa.mis.dto.request.SchemeSupportingRequest;
+import com.campa.mis.dto.response.SchemeSupportingResponse;
 
 public interface SchemeDocEmploymentService {
 
 	SchemeSupportingRequest saveDocEmploymentDetails(Long schemeId, SchemeSupportingRequest request,
 			List<MultipartFile> kmlFiles, List<MultipartFile> pngFiles) throws IOException;
+
+	SchemeSupportingResponse getDocEmploymentDetails(Long schemeId);
 
 }

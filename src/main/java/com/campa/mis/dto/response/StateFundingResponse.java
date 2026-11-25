@@ -16,7 +16,11 @@ public record StateFundingResponse(
 
 		String otherFundingSources,
 
-		String fundingDocumentFileName
+		String fundingDocumentFileName,
+		
+		byte[] stateAgreementFileData,
+		
+		byte[] fundingAgreementFileData
 
 ) {
 

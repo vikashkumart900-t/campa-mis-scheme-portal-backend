@@ -36,12 +36,24 @@ public class SchemeRoleStatusEntity {
 	@Column(name = "campa_status", length = 30)
 	private String campaStatus;
 
-	@Column(name = "remarks")
-	private String remarks;
+	@Column(name = "hod_remarks", length = 1000)
+	private String hodRemarks;
+
+	@Column(name = "pd_remarks", length = 1000)
+	private String pdRemarks;
+
+	@Column(name = "campa_remarks", length = 1000)
+	private String campaRemarks;
 
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at")
-	private LocalDateTime updatedAt;
+	@Column(name = "hod_updated_at")
+	private LocalDateTime hodUpdatedAt;
+
+	@Column(name = "pd_updated_at")
+	private LocalDateTime pdUpdatedAt;
+
+	@Column(name = "campa_updated_at")
+	private LocalDateTime campaUpdatedAt;
 }

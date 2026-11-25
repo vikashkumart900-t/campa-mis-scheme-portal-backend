@@ -13,6 +13,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.campa.mis.dto.request.EmploymentGenerationRequest;
 import com.campa.mis.dto.request.SchemeSupportingRequest;
 import com.campa.mis.dto.request.SupportingDocumentRequest;
+import com.campa.mis.dto.response.SchemeEmploymentGenerationResponse;
+import com.campa.mis.dto.response.SchemeSupportingDocumentResponse;
+import com.campa.mis.dto.response.SchemeSupportingResponse;
 import com.campa.mis.entity.SchemeCapacityBuildingEntity;
 import com.campa.mis.entity.SchemeEmploymentGenerationEntity;
 import com.campa.mis.entity.SchemeSupportingDocumentEntity;
@@ -186,4 +189,30 @@ public class SchemeDocEmploymentDtlsServiceImpl implements SchemeDocEmploymentSe
 			throw new IllegalArgumentException("Invalid document type. Allowed types: KML, KMZ and IMAGE");
 		}
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public SchemeSupportingResponse getDocEmploymentDetails(Long schemeId) {
+
+		// 1. FETCH CAPACITY BUILDING DETAILS
+		String capacityDetails = capacityRepository.findFirstBySchemeIdOrderByIdDesc(schemeId)
+				.map(SchemeCapacityBuildingEntity::getCapacityBuildingDetails).orElse(null);
+
+		// 2. FETCH SUPPORTING DOCUMENTS
+		List<SchemeSupportingDocumentResponse> documents = documentRepository.findBySchemeIdOrderByIdAsc(schemeId)
+				.stream().map(doc -> new SchemeSupportingDocumentResponse(doc.getId(), doc.getDocumentType(),
+						doc.getDescription(), doc.getFileName(), doc.getContentType(),doc.getFileData()))
+				.toList();
+
+		// 3. FETCH EMPLOYMENT GENERATION DETAILS
+		List<SchemeEmploymentGenerationResponse> employmentDetails = employmentRepository
+				.findBySchemeIdOrderByIdAsc(schemeId).stream()
+				.map(emp -> new SchemeEmploymentGenerationResponse(emp.getFinancialYear(), emp.getLabourCost(),
+						emp.getMandaysGenerated(), emp.getTribals(), emp.getForestDwellersBenefitted()))
+				.toList();
+
+		// 4. RETURN COMBINED RESPONSE
+		return new SchemeSupportingResponse(schemeId, capacityDetails, documents, employmentDetails);
+	}
+
 }

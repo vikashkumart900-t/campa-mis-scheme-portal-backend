@@ -45,7 +45,7 @@ public class SchemeFinalDocumentController {
 	}
 
 	// GET: FETCH FINAL DOCUMENTS
-	@GetMapping("/{schemeId}/final-documents")
+	@GetMapping("/final-documents/{schemeId}")
 	public ResponseEntity<SchemeFinalDocumentResponse> getFinalDocuments(@PathVariable Long schemeId) {
 
 		return ResponseEntity.ok(this.finalDocumentService.getFinalDocuments(schemeId));

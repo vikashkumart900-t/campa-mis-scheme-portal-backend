@@ -390,8 +390,8 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
 		}
 
-		if (!roleCode.equals("IA") && !roleCode.equals("PD")) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only IA and PD registration is supported");
+		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD") ) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only IA ,HOD and PD registration is supported");
 		}
 
 		var role = userRoleRepository.findByRoleCode(roleCode)

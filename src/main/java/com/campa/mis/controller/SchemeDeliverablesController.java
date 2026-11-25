@@ -1,16 +1,18 @@
 package com.campa.mis.controller;
 
-import com.campa.mis.dto.request.DeliverablesRequest;
-import com.campa.mis.service.SchemeDeliverablesService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import com.campa.mis.dto.request.DeliverablesRequest;
+import com.campa.mis.service.SchemeDeliverablesService;
+import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/v1/mis")
@@ -18,12 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class SchemeDeliverablesController {
 
 	private final SchemeDeliverablesService schemeDeliverablesService;
+	private final ObjectMapper objectMapper;
 
-	// SAVE
-	@PostMapping("/{schemeId}/deliverables")
-	public ResponseEntity<?> saveDeliverables(@PathVariable Long schemeId, @RequestBody DeliverablesRequest request) {
+	// SAVE OR UPDATE
+	@PostMapping(value = "/{schemeId}/deliverables", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> saveDeliverables(@PathVariable Long schemeId, @RequestPart("request") String requestJson,
+			@RequestPart(value = "file", required = false) MultipartFile file) {
 
-		return ResponseEntity.ok(this.schemeDeliverablesService.saveDeliverables(schemeId, request));
+		DeliverablesRequest request = objectMapper.readValue(requestJson, DeliverablesRequest.class);
+
+		return ResponseEntity.ok(schemeDeliverablesService.saveDeliverables(schemeId, request, file));
 	}
 
 	// FETCH
@@ -33,10 +39,4 @@ public class SchemeDeliverablesController {
 		return ResponseEntity.ok(this.schemeDeliverablesService.getDeliverables(schemeId));
 	}
 
-	// UPDATE
-	@PutMapping("/{schemeId}/deliverables")
-	public ResponseEntity<?> updateDeliverables(@PathVariable Long schemeId, @RequestBody DeliverablesRequest request) {
-
-		return ResponseEntity.ok(this.schemeDeliverablesService.updateDeliverables(schemeId, request));
-	}
 }

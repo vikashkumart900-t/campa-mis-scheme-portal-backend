@@ -1,9 +1,16 @@
 package com.campa.mis.serviceImpl;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
 import com.campa.mis.dto.request.DeliverableRequest;
 import com.campa.mis.dto.request.DeliverablesRequest;
 import com.campa.mis.dto.request.YearlyExpenditureRequest;
@@ -29,30 +36,20 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 
 	@Override
 	@Transactional
-	public DeliverablesResponse saveDeliverables(Long schemeId, DeliverablesRequest request) {
+	public DeliverablesResponse saveDeliverables(Long schemeId, DeliverablesRequest request,
+			MultipartFile multipartRequest) {
 
 		SchemeDeliverableDetailsEntity existing = detailsRepository.findBySchemeId(schemeId).orElse(null);
 
-		return saveOrUpdate(schemeId, request, existing);
-	}
-
-	@Override
-	@Transactional
-	public DeliverablesResponse updateDeliverables(Long schemeId, DeliverablesRequest request) {
-
-		SchemeDeliverableDetailsEntity existing = detailsRepository.findBySchemeId(schemeId).orElseThrow(
-				() -> new IllegalArgumentException("Deliverable details not found for scheme: " + schemeId));
-
-		return saveOrUpdate(schemeId, request, existing);
+		return saveOrUpdate(schemeId, request, multipartRequest, existing);
 	}
 
 	private DeliverablesResponse saveOrUpdate(Long schemeId, DeliverablesRequest request,
-			SchemeDeliverableDetailsEntity existing) {
+			MultipartFile multipartRequest, SchemeDeliverableDetailsEntity existing) {
 
 		validateRequest(request);
 
 		// 1. Save parent details
-
 		SchemeDeliverableDetailsEntity details = existing != null ? existing : new SchemeDeliverableDetailsEntity();
 
 		details.setSchemeId(schemeId);
@@ -65,45 +62,57 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 		Long detailsId = details.getId();
 
 		// 2. Delete existing child records during update
-
 		if (existing != null) {
 			deliverablesRepository.deleteByDetailsId(detailsId);
 			expenditureRepository.deleteByDetailsId(detailsId);
 		}
 
 		// 3. Save deliverables
+		List<SchemeDeliverablesEntity> deliverables = new ArrayList<>();
 
-		List<SchemeDeliverablesEntity> deliverables = request.deliverables().stream().map(item -> {
+		for (int i = 0; i < request.deliverables().size(); i++) {
 
-			SchemeDeliverablesEntity schemeDeliverablesEntity = new SchemeDeliverablesEntity();
+			DeliverableRequest item = request.deliverables().get(i);
 
-			schemeDeliverablesEntity.setDeliverableDetailsId(detailsId);
-			schemeDeliverablesEntity.setDeliverable(item.deliverable());
-			schemeDeliverablesEntity.setUnit(item.unit());
-			schemeDeliverablesEntity.setInitiationDate(item.initiationDate());
-			schemeDeliverablesEntity.setClosingDate(item.closingDate());
-			schemeDeliverablesEntity.setFinancialOutlay(item.financialOutlay());
-			schemeDeliverablesEntity.setRemarks(item.remarks());
+			SchemeDeliverablesEntity entity = new SchemeDeliverablesEntity();
 
-			return schemeDeliverablesEntity;
+			entity.setDeliverableDetailsId(detailsId);
+			entity.setDeliverable(item.deliverable());
+			entity.setUnit(item.unit());
+			entity.setInitiationDate(item.initiationDate());
+			entity.setClosingDate(item.closingDate());
+			entity.setFinancialOutlay(item.financialOutlay());
+			entity.setRemarks(item.remarks());
 
-		}).toList();
+			// Single multipart file
+			if (i == 0 && multipartRequest != null && !multipartRequest.isEmpty()) {
+
+				entity.setDocumentFileName(multipartRequest.getOriginalFilename());
+
+				try {
+					entity.setDocumentFileData(multipartRequest.getBytes());
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to upload deliverable file", e);
+				}
+			}
+
+			deliverables.add(entity);
+		}
 
 		deliverablesRepository.saveAll(deliverables);
 
 		// 4. Save yearly expenditure only for YEAR_WISE
-
 		if ("YEAR_WISE".equals(request.expenditureType())) {
 
 			List<SchemeYearlyExpenditureEntity> expenditures = request.yearlyExpenditures().stream().map(item -> {
 
-				SchemeYearlyExpenditureEntity yearlyExpenditureEntity = new SchemeYearlyExpenditureEntity();
+				SchemeYearlyExpenditureEntity entity = new SchemeYearlyExpenditureEntity();
 
-				yearlyExpenditureEntity.setDeliverableDetailsId(detailsId);
-				yearlyExpenditureEntity.setFinancialYear(item.financialYear());
-				yearlyExpenditureEntity.setExpenditure(item.expenditure());
+				entity.setDeliverableDetailsId(detailsId);
+				entity.setFinancialYear(item.financialYear());
+				entity.setExpenditure(item.expenditure());
 
-				return yearlyExpenditureEntity;
+				return entity;
 
 			}).toList();
 
@@ -111,17 +120,6 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 		}
 
 		// 5. Prepare response
-
-		return buildResponse(details);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public DeliverablesResponse getDeliverables(Long schemeId) {
-
-		SchemeDeliverableDetailsEntity details = detailsRepository.findBySchemeId(schemeId).orElseThrow(
-				() -> new IllegalArgumentException("Deliverable details not found for scheme: " + schemeId));
-
 		return buildResponse(details);
 	}
 
@@ -197,7 +195,7 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 		List<DeliverablesResponse.DeliverableResponse> deliverableResponses = deliverables.stream()
 				.map(item -> new DeliverablesResponse.DeliverableResponse(item.getId(), item.getDeliverable(),
 						item.getUnit(), item.getInitiationDate(), item.getClosingDate(), item.getFinancialOutlay(),
-						item.getRemarks(), item.getDocumentFileName(), item.getDocumentFilePath()))
+						item.getRemarks(), item.getDocumentFileName(), item.getDocumentFileData()))
 				.toList();
 
 		List<DeliverablesResponse.YearlyExpenditureResponse> expenditureResponses = expenditures.stream()
@@ -208,5 +206,15 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 		return new DeliverablesResponse(details.getId(), details.getExpenditureType(), totalOutlay, deliverables.size(),
 				deliverableResponses, expenditureResponses, details.getNationalImportance(),
 				details.getInternationalFootprints());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public DeliverablesResponse getDeliverables(Long schemeId) {
+
+		SchemeDeliverableDetailsEntity details = detailsRepository.findBySchemeId(schemeId).orElseThrow(
+				() -> new IllegalArgumentException("Deliverable details not found for scheme: " + schemeId));
+
+		return buildResponse(details);
 	}
 }

@@ -266,7 +266,8 @@ public class SchemeObjectivesServiceImpl implements SchemeObjectivesService {
 
 		return new StateFundingResponse(entity.getId(), entity.getSchemeId(), entity.getHasStateComponents(),
 				entity.getStateOnboard(), entity.getStateAgreementFileName(), entity.getHasOtherFundingAgency(),
-				entity.getOtherFundingSources(), entity.getFundingDocumentFileName());
+				entity.getOtherFundingSources(), entity.getFundingDocumentFileName(), entity.getStateAgreementFile(),
+				entity.getFundingDocumentFile());
 	}
 
 	@Override

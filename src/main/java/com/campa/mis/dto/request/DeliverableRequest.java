@@ -17,6 +17,10 @@ public record DeliverableRequest(
 
     BigDecimal financialOutlay,
 
-    String remarks
+    String remarks,
+    
+    String documentFileName,
+    
+    byte[] documentFileData
 
 ) {}

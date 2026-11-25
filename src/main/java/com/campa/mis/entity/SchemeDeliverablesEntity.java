@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,8 +45,9 @@ public class SchemeDeliverablesEntity {
 	@Column(name = "document_file_name")
 	private String documentFileName;
 
-	@Column(name = "document_file_path")
-	private String documentFilePath;
+	@Column(name = "document_file_data")
+	@JdbcTypeCode(SqlTypes.VARBINARY)
+	private byte[] documentFileData;
 
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;

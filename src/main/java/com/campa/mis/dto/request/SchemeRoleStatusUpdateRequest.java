@@ -11,7 +11,9 @@ public record SchemeRoleStatusUpdateRequest(
 
 		@NotBlank String status,
 		
-		String remarks
+		String hodRemarks,
+		String pdRemarks,
+		String campaRemarks
 
 ) {
 

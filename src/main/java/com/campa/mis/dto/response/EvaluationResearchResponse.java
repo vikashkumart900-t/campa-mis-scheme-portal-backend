@@ -20,6 +20,8 @@ public record EvaluationResearchResponse(
 
     String researchAspects,
 
-    String uniqueHighlights
+    String uniqueHighlights,
+    
+    byte[] supportingDocumentData
 
 ) {}

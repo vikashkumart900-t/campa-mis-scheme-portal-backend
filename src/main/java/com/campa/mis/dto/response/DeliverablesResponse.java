@@ -33,7 +33,7 @@ public record DeliverablesResponse(
         BigDecimal financialOutlay,
         String remarks,
         String documentFileName,
-        String documentFilePath
+        byte[] documentFileData
     ) {}
 
     public record YearlyExpenditureResponse(
