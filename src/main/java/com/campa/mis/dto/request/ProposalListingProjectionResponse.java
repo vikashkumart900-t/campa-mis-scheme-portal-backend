@@ -2,6 +2,7 @@ package com.campa.mis.dto.request;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ProposalListingProjectionResponse {
 
@@ -22,4 +23,6 @@ public interface ProposalListingProjectionResponse {
     String getCampaStatus();
     
     LocalDateTime getSubmissionDate();
+    
+    List<String> getStateNames();
 }

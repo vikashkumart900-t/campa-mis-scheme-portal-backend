@@ -17,37 +17,76 @@ public interface NodalOfficerRepository extends JpaRepository<NodalOfficerEntity
 
 	Optional<NodalOfficerEntity> findBySchemeId(Long schemeId);
 
-	@Query("""
-			    SELECT
-			        ndo.schemeId AS schemeId,
+//	@Query("""
+//			    SELECT
+//			        ndo.schemeId AS schemeId,
+//
+//			        FUNCTION('split_part', sc.schemeName, ':', 1) AS schemeName,
+//
+//			        ndo.schemeDuration AS schemeDuration,
+//			        ndo.proposedFinancialOutlay AS proposedFinancialOutlay,
+//
+//			        CONCAT(
+//			            'PROP/',
+//			            CAST(YEAR(CURRENT_DATE) AS string),
+//			            '/',
+//			            CAST(ndo.schemeId AS string)
+//			        ) AS proposalId,
+//
+//			        srs.hodStatus AS hodStatus,
+//			        srs.pdStatus AS pdStatus,
+//			        srs.campaStatus AS campaStatus,
+//			        srs.createdAt AS submissionDate
+//
+//			    FROM NodalOfficerEntity ndo
+//
+//			    INNER JOIN SchemeEntity sc
+//			        ON sc.schemeId = ndo.schemeId
+//
+//			    LEFT JOIN SchemeRoleStatusEntity srs
+//			        ON srs.schemeId = ndo.schemeId
+//
+//			    WHERE ndo.schemeId = :schemeId
+//			""")
+//	Optional<ProposalListingProjectionResponse> findProposalDetailsBySchemeId(@Param("schemeId") Long schemeId);
 
-			        FUNCTION('split_part', sc.schemeName, ':', 1) AS schemeName,
+	@Query(value = """
+			SELECT
+			    ndo.scheme_id AS "schemeId",
+			    split_part(sc.scheme_name, ':', 1) AS "schemeName",
+			    ndo.scheme_duration AS "schemeDuration",
+			    ndo.proposed_financial_outlay AS "proposedFinancialOutlay",
 
-			        ndo.schemeDuration AS schemeDuration,
-			        ndo.proposedFinancialOutlay AS proposedFinancialOutlay,
+			    CONCAT(
+			        'PROP/',
+			        EXTRACT(YEAR FROM CURRENT_DATE)::int,
+			        '/',
+			        ndo.scheme_id
+			    ) AS "proposalId",
 
-			        CONCAT(
-			            'PROP/',
-			            CAST(YEAR(CURRENT_DATE) AS string),
-			            '/',
-			            CAST(ndo.schemeId AS string)
-			        ) AS proposalId,
+			    srs.hod_status AS "hodStatus",
+			    srs.pd_status AS "pdStatus",
+			    srs.campa_status AS "campaStatus",
+			    srs.created_at AS "submissionDate",
 
-			        srs.hodStatus AS hodStatus,
-			        srs.pdStatus AS pdStatus,
-			        srs.campaStatus AS campaStatus,
-			        srs.createdAt AS submissionDate
+			    (
+			        SELECT STRING_AGG(DISTINCT st.state_name, ', ')
+			        FROM mis_scheme.scheme_implementation_states sis
+			        JOIN mis_scheme.states st
+			            ON st.state_code = sis.state_code
+			        WHERE sis.scheme_id = ndo.scheme_id
+			    ) AS "stateNames"
 
-			    FROM NodalOfficerEntity ndo
+			FROM mis_scheme.nodal_officers ndo
 
-			    INNER JOIN SchemeEntity sc
-			        ON sc.schemeId = ndo.schemeId
+			INNER JOIN mis_scheme.schemes sc
+			    ON sc.scheme_id = ndo.scheme_id
 
-			    LEFT JOIN SchemeRoleStatusEntity srs
-			        ON srs.schemeId = ndo.schemeId
+			LEFT JOIN mis_scheme.scheme_role_status srs
+			    ON srs.scheme_id = ndo.scheme_id
 
-			    WHERE ndo.schemeId = :schemeId
-			""")
+			WHERE ndo.scheme_id = :schemeId
+			""", nativeQuery = true)
 	Optional<ProposalListingProjectionResponse> findProposalDetailsBySchemeId(@Param("schemeId") Long schemeId);
 
 	@Query("""

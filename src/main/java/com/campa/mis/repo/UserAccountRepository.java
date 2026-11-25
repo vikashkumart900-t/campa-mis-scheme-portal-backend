@@ -58,6 +58,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccountEntity, 
 	Optional<String> findActiveTokenIdByEmail(@Param("email") String email);
 
 	@Modifying
+	@Transactional
 	@Query(value = """
 			UPDATE mis_scheme.user_accounts
 			SET active_token_id = :tokenId,
@@ -69,6 +70,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccountEntity, 
 			@Param("expiresAt") OffsetDateTime expiresAt);
 
 	@Modifying
+	@Transactional
 	@Query(value = """
 			UPDATE mis_scheme.user_accounts
 			SET active_token_id = NULL,

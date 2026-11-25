@@ -42,6 +42,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.ProposalListingProjectionResponse;
@@ -81,6 +82,8 @@ import com.campa.mis.service.EmailService;
 import com.campa.mis.service.SchemeService;
 
 import lombok.RequiredArgsConstructor;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 @RequiredArgsConstructor
@@ -88,6 +91,7 @@ public class SchemeServiceImpl implements SchemeService {
 
 	private final RestTemplate restTemplate;
 	private final PasswordEncoder passwordEncoder;
+	private final ObjectMapper objectMapper;
 
 	@Value("${parivesh.base-url}")
 	private String baseUrl;
@@ -301,7 +305,34 @@ public class SchemeServiceImpl implements SchemeService {
 
 	}
 
+//	@Override
+//	public ResponseEntity<String> pariveshLogin(LoginRequestDTO request) {
+//
+//		String url = UriComponentsBuilder.fromUriString(baseUrl).path("/api/integration/login")
+//				.queryParam("secretKey", secretKey).build().encode().toUriString();
+//
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.setContentType(MediaType.APPLICATION_JSON);
+//		headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+//
+//		HttpEntity<LoginRequestDTO> entity = new HttpEntity<>(request, headers);
+//
+//		try {
+//			return restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+//
+//		} catch (RestClientResponseException ex) {
+//			// Forward the external API's HTTP status and response body.
+//			return ResponseEntity.status(ex.getStatusCode()).contentType(MediaType.APPLICATION_JSON)
+//					.body(ex.getResponseBodyAsString());
+//
+//		} catch (RestClientException ex) {
+//			return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+//					.body("{\"message\":\"Unable to connect to PARIVESH service\"}");
+//		}
+//	}
+
 	@Override
+	@Transactional
 	public ResponseEntity<String> pariveshLogin(LoginRequestDTO request) {
 
 		String url = UriComponentsBuilder.fromUriString(baseUrl).path("/api/integration/login")
@@ -309,22 +340,73 @@ public class SchemeServiceImpl implements SchemeService {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
 		HttpEntity<LoginRequestDTO> entity = new HttpEntity<>(request, headers);
 
 		try {
-			return restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+			// Parse external response
+			ObjectNode root = (ObjectNode) objectMapper.readTree(response.getBody());
+
+			// Get CAMPA user
+			UserAccountProjection user = userAccountRepository.findUserForAuthentication(request.username())
+					.orElseThrow(() -> new BadCredentialsException("CAMPA user not found"));
+
+			// Check account status
+			if (!"ACTIVE".equalsIgnoreCase(user.getAccountStatus())) {
+				throw new DisabledException("Your account is not active.");
+			}
+
+			// Generate CAMPA JWT
+			String accessToken = generateCampaAccessToken(user);
+
+			// Override only data.jwt
+			ObjectNode data = (ObjectNode) root.get("data");
+			data.put("jwt", accessToken);
+
+			return ResponseEntity.status(response.getStatusCode()).contentType(MediaType.APPLICATION_JSON)
+					.body(objectMapper.writeValueAsString(root));
 
 		} catch (RestClientResponseException ex) {
-			// Forward the external API's HTTP status and response body.
+
 			return ResponseEntity.status(ex.getStatusCode()).contentType(MediaType.APPLICATION_JSON)
 					.body(ex.getResponseBodyAsString());
 
 		} catch (RestClientException ex) {
+
 			return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
 					.body("{\"message\":\"Unable to connect to PARIVESH service\"}");
+
+		} catch (Exception ex) {
+
+			throw new RuntimeException("Failed to process PARIVESH login response: " + ex.getMessage(), ex);
 		}
+	}
+
+	private String generateCampaAccessToken(UserAccountProjection user) {
+
+		String email = user.getEmail();
+		Long userId = user.getUserId();
+		String roleCode = user.getRoleCode();
+
+		String tokenId = UUID.randomUUID().toString();
+
+		UserDetails userDetails = User.withUsername(email).password(user.getPasswordHash())
+				.authorities("ROLE_" + roleCode).build();
+
+		String accessToken = jwtService.generateToken(userDetails, tokenId);
+
+		Instant expiresAt = Instant.now().plusMillis(expirationTime);
+
+		int updated = userAccountRepository.updateActiveSession(userId, tokenId, expiresAt.atOffset(ZoneOffset.UTC));
+
+		if (updated != 1) {
+			throw new IllegalStateException("Unable to create login session.");
+		}
+
+		return accessToken;
 	}
 
 	@Override
@@ -390,7 +472,7 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
 		}
 
-		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD") ) {
+		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only IA ,HOD and PD registration is supported");
 		}
 
