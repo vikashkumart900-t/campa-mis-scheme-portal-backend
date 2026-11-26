@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.response.ApiResponse;
 import com.campa.mis.dto.response.NodalOfficerDetailsDTO;
-import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
-import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.security.JwtService;
 import com.campa.mis.service.SchemeService;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController

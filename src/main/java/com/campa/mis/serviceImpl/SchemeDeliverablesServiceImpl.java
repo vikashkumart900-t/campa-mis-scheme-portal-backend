@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import com.campa.mis.dto.request.DeliverableRequest;
 import com.campa.mis.dto.request.DeliverablesRequest;
@@ -22,6 +20,7 @@ import com.campa.mis.repo.SchemeDeliverableDetailsRepository;
 import com.campa.mis.repo.SchemeDeliverablesRepository;
 import com.campa.mis.repo.SchemeYearlyExpenditureRepository;
 import com.campa.mis.service.SchemeDeliverablesService;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -37,7 +36,7 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 	@Override
 	@Transactional
 	public DeliverablesResponse saveDeliverables(Long schemeId, DeliverablesRequest request,
-			MultipartFile multipartRequest) {
+			List<MultipartFile> multipartRequest) {
 
 		SchemeDeliverableDetailsEntity existing = detailsRepository.findBySchemeId(schemeId).orElse(null);
 
@@ -45,7 +44,7 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 	}
 
 	private DeliverablesResponse saveOrUpdate(Long schemeId, DeliverablesRequest request,
-			MultipartFile multipartRequest, SchemeDeliverableDetailsEntity existing) {
+			List<MultipartFile> multipartRequest, SchemeDeliverableDetailsEntity existing) {
 
 		validateRequest(request);
 
@@ -84,15 +83,22 @@ public class SchemeDeliverablesServiceImpl implements SchemeDeliverablesService 
 			entity.setFinancialOutlay(item.financialOutlay());
 			entity.setRemarks(item.remarks());
 
-			// Single multipart file
-			if (i == 0 && multipartRequest != null && !multipartRequest.isEmpty()) {
+			List<MultipartFile> uploadedFiles = multipartRequest != null ? multipartRequest : List.of();
 
-				entity.setDocumentFileName(multipartRequest.getOriginalFilename());
+			for (int j = 0; j < uploadedFiles.size(); j++) {
 
-				try {
-					entity.setDocumentFileData(multipartRequest.getBytes());
-				} catch (IOException e) {
-					throw new RuntimeException("Failed to upload deliverable file", e);
+				MultipartFile file = uploadedFiles.get(i);
+
+				if (file != null && !file.isEmpty()) {
+
+					entity.setDocumentFileName(file.getOriginalFilename());
+
+					try {
+						entity.setDocumentFileData(file.getBytes());
+					} catch (IOException e) {
+						throw new RuntimeException("Failed to upload deliverable file: " + file.getOriginalFilename(),
+								e);
+					}
 				}
 			}
 

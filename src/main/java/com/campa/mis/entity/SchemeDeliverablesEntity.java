@@ -4,10 +4,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -45,8 +49,7 @@ public class SchemeDeliverablesEntity {
 	@Column(name = "document_file_name")
 	private String documentFileName;
 
-	@Column(name = "document_file_data")
-	@JdbcTypeCode(SqlTypes.VARBINARY)
+	@Column(name = "document_file_data", columnDefinition = "bytea")
 	private byte[] documentFileData;
 
 	@Column(name = "created_at")

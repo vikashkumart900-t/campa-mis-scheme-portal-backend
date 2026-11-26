@@ -1,6 +1,7 @@
 package com.campa.mis.security;
 
 import java.util.List;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,8 +10,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.campa.mis.dto.response.UserAccountProjection;
-import com.campa.mis.entity.UserAccountEntity;
-import com.campa.mis.entity.UserRoleEntity;
 import com.campa.mis.repo.UserAccountRepository;
 import com.campa.mis.repo.UserRoleRepository;
 

@@ -3,7 +3,9 @@ package com.campa.mis.service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import org.springframework.http.ResponseEntity;
+
 import com.campa.mis.dto.request.LoginRequestDTO;
 import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.ProposalListingProjectionResponse;
@@ -11,11 +13,9 @@ import com.campa.mis.dto.request.RegistrationRequestDTO;
 import com.campa.mis.dto.request.ResetPasswordRequest;
 import com.campa.mis.dto.response.LoginResponse;
 import com.campa.mis.dto.response.NodalOfficerDetailsDTO;
-import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.dto.response.ProgramOrganizationsResponseDTO;
 import com.campa.mis.dto.response.SchemeDetailsResponse;
 import com.campa.mis.entity.DistrictEntity;
-import com.campa.mis.entity.NodalOfficerEntity;
 import com.campa.mis.entity.SchemeEntity;
 import com.campa.mis.entity.StateEntity;
 import com.campa.mis.entity.UserAccountEntity;

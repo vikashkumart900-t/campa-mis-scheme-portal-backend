@@ -52,4 +52,21 @@ public class EmailServiceImpl implements EmailService {
 
 		mailSender.send(message);
 	}
+
+	@Override
+	public void sendStateHodRegistrationEmail(String to, String name) {
+
+		SimpleMailMessage message = new SimpleMailMessage();
+
+		message.setTo(to);
+		message.setSubject("CAMPA MIS Portal - STATE HOD Registration Successful");
+
+		message.setText("Dear " + name + ",\n\n" + "Your STATE HOD account has been successfully registered "
+				+ "on the CAMPA MIS Portal.\n\n" + "Your account is now ACTIVE. You can log in to the portal "
+				+ "using your registered email address and password.\n\n"
+				+ "You are now eligible to submit the Annual Plan of Operation (APO) "
+				+ "through the CAMPA MIS Portal.\n\n" + "Regards,\n" + "CAMPA MIS Portal Team");
+
+		mailSender.send(message);
+	}
 }

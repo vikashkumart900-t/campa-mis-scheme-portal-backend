@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 public record RegistrationRequestDTO(
 
     @NotBlank(message = "Role is required")
-    @Pattern(regexp = "IA|PD|HOD", message = "Role must be IA or PD or HOD")
+    @Pattern(regexp = "IA|PD|HOD|STATE_HOD", message = "Role must be IA or PD or HOD or STATE_HOD")
     String roleCode,
 
     Long organizationId,
@@ -27,12 +27,8 @@ public record RegistrationRequestDTO(
     @Email(message = "Enter a valid email")
     @Size(max = 150)
     String email,
-
-    @NotBlank(message = "Mobile number is required")
-    @Pattern(
-        regexp = "^[0-9]{10}$",
-        message = "Mobile number must contain 10 digits"
-    )
+ 
+    @Pattern( regexp = "^[0-9]{10}$", message = "Mobile number must contain 10 digits" )
     String mobile,
 
     @NotBlank(message = "Password is required")

@@ -1,5 +1,7 @@
 package com.campa.mis.controller;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +27,7 @@ public class SchemeDeliverablesController {
 	// SAVE OR UPDATE
 	@PostMapping(value = "/{schemeId}/deliverables", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<?> saveDeliverables(@PathVariable Long schemeId, @RequestPart("request") String requestJson,
-			@RequestPart(value = "file", required = false) MultipartFile file) {
+			@RequestPart(value = "file", required = false) List<MultipartFile> file) {
 
 		DeliverablesRequest request = objectMapper.readValue(requestJson, DeliverablesRequest.class);
 

@@ -2,11 +2,11 @@ package com.campa.mis.repo;
 
 import java.util.List;
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.campa.mis.dto.request.NodalOfficerRegistrationRequestDTO;
 import com.campa.mis.dto.request.ProposalListingProjectionResponse;
 import com.campa.mis.dto.response.NodalOfficerDetailsResponse;
 import com.campa.mis.entity.NodalOfficerEntity;
@@ -75,7 +75,12 @@ public interface NodalOfficerRepository extends JpaRepository<NodalOfficerEntity
 			        JOIN mis_scheme.states st
 			            ON st.state_code = sis.state_code
 			        WHERE sis.scheme_id = ndo.scheme_id
-			    ) AS "stateNames"
+			    ) AS "stateNames" ,
+			    (
+			         SELECT STRING_AGG(DISTINCT sis.state_code, ', ')
+			         FROM mis_scheme.scheme_implementation_states sis
+			         WHERE sis.scheme_id = ndo.scheme_id
+			     ) AS "stateCodes"
 
 			FROM mis_scheme.nodal_officers ndo
 

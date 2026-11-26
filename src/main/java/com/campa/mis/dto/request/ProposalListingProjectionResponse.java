@@ -25,4 +25,6 @@ public interface ProposalListingProjectionResponse {
     LocalDateTime getSubmissionDate();
     
     List<String> getStateNames();
+    
+    List<String> getStateCodes();
 }

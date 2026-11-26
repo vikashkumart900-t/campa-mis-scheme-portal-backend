@@ -472,24 +472,37 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
 		}
 
-		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD")) {
+		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD")
+				&& !roleCode.equals("STATE_HOD")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only IA ,HOD and PD registration is supported");
 		}
 
 		var role = userRoleRepository.findByRoleCode(roleCode)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role: " + roleCode));
 
-		if (roleCode.equals("Implementing Agency")) {
+		if (roleCode.equalsIgnoreCase("IA")) {
+
+			// IA registration
 			if (request.organizationId() == null) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 						"Organization is required for IA registration");
 			}
-		} else {
-			// Programme Division registration does not require an organization.
 
+		} else if (roleCode.equalsIgnoreCase("PD")) {
+
+			// PD registration
 			if (request.programDivisionId() == null) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 						"Programme Division is required for PD registration");
+			}
+
+		} else if (roleCode.equalsIgnoreCase("STATE_HOD")) {
+
+			// STATE_HOD does not require organization or program division
+			if (request.organizationId() != null || request.programDivisionId() != null) {
+
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"Organization and Programme Division are not required for STATE_HOD registration");
 			}
 		}
 
@@ -507,11 +520,27 @@ public class SchemeServiceImpl implements SchemeService {
 		// The incoming value must be the raw password, never an existing hash.
 		account.setPasswordHash(passwordEncoder.encode(request.password()));
 
-		account.setAccountStatus("PENDING_APPROVAL");
+		if (roleCode.equalsIgnoreCase("STATE_HOD")) {
+			account.setAccountStatus("ACTIVE");
+		} else {
+			account.setAccountStatus("PENDING_APPROVAL");
+		}
 
-		emailService.sendRegistrationEmail(email, request.email(), request.password());
+		// Save account
+		UserAccountEntity savedAccount = userAccountRepository.save(account);
 
-		return userAccountRepository.save(account);
+		// Role-wise email
+		if ("STATE_HOD".equalsIgnoreCase(roleCode)) {
+
+			emailService.sendStateHodRegistrationEmail(savedAccount.getEmail(), savedAccount.getFullName());
+
+		} else {
+
+			emailService.sendRegistrationEmail(savedAccount.getEmail(), savedAccount.getFullName(), request.password());
+		}
+
+		return savedAccount;
+
 	}
 
 	@Override

@@ -1,12 +1,17 @@
 package com.campa.mis.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "scheme_state_funding_details", schema = "mis_scheme")
@@ -45,11 +50,9 @@ public class SchemeStateFundingEntity {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
-	@JdbcTypeCode(SqlTypes.VARBINARY)
 	@Column(name = "state_agreement_file", columnDefinition = "bytea")
 	private byte[] stateAgreementFile;
 
-	@JdbcTypeCode(SqlTypes.VARBINARY)
 	@Column(name = "funding_document_file", columnDefinition = "bytea")
 	private byte[] fundingDocumentFile;
 
