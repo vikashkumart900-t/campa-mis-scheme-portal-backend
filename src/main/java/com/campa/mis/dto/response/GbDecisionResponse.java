@@ -1,6 +1,7 @@
 package com.campa.mis.dto.response;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record GbDecisionResponse(
@@ -13,6 +14,8 @@ public record GbDecisionResponse(
     String gbRemarks,
     String meetingMinutesFileName,
     String meetingMinutesContentType,
-    String decisionStatus,
-    List<GbStateDecisionResponse> stateDecisions
+    List<GbStateDecisionResponse> stateDecisions,
+    LocalDateTime campaApprovalDate,
+    String schemeName,
+    String proposalID
 ) {}

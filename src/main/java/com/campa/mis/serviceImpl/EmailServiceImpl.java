@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import com.campa.mis.entity.StateHodAccountEntity;
 import com.campa.mis.service.EmailService;
 
 @Service
@@ -46,7 +47,9 @@ public class EmailServiceImpl implements EmailService {
 
 		message.setText("Dear User,\n\n" + "We received a request for registration on CAMPA MIS Portal.\n\n"
 				+ "Your login credentials are as follows:\n" + "Username: " + username + "\n" + "Password: " + password
-				+ "\n\n" + "Please change your password after your first login.\n\n"
+				+ "\n\n" + "Your account is currently pending approval by CAMPA. "
+				+ "You will be able to log in to the portal only after your registration has been approved by CAMPA.\n\n"
+				+ "Please change your password after your first login.\n\n"
 				+ "If you did not request a registration, please ignore this email.\n\n" + "Regards,\n"
 				+ "CAMPA MIS Portal Team");
 
@@ -54,7 +57,7 @@ public class EmailServiceImpl implements EmailService {
 	}
 
 	@Override
-	public void sendStateHodRegistrationEmail(String to, String name) {
+	public void sendStateHodRegistrationEmail(String to, String name, String password) {
 
 		SimpleMailMessage message = new SimpleMailMessage();
 
@@ -62,11 +65,49 @@ public class EmailServiceImpl implements EmailService {
 		message.setSubject("CAMPA MIS Portal - STATE HOD Registration Successful");
 
 		message.setText("Dear " + name + ",\n\n" + "Your STATE HOD account has been successfully registered "
-				+ "on the CAMPA MIS Portal.\n\n" + "Your account is now ACTIVE. You can log in to the portal "
+				+ "on the CAMPA MIS Portal.\n\n"
+
+				+ "Your login credentials are as follows:\n" + "Username: " + to + "\n" + "Password: " + password
+				+ "\n\n"
+
+				+ "Your account is now ACTIVE. You can log in to the portal "
 				+ "using your registered email address and password.\n\n"
+
 				+ "You are now eligible to submit the Annual Plan of Operation (APO) "
-				+ "through the CAMPA MIS Portal.\n\n" + "Regards,\n" + "CAMPA MIS Portal Team");
+				+ "through the CAMPA MIS Portal.\n\n"
+
+				+ "For security reasons, please change your password after your first login.\n\n"
+
+				+ "Regards,\n" + "CAMPA MIS Portal Team");
 
 		mailSender.send(message);
 	}
+
+	@Override
+	public void sendStateHodNotification(StateHodAccountEntity account, String schemeName) {
+
+		SimpleMailMessage message = new SimpleMailMessage();
+
+		message.setTo(account.getEmail());
+		message.setSubject("CAMPA MIS - Scheme Notification");
+
+		message.setText("Dear " + account.getName() + ",\n\n"
+				+ "Your STATE HOD account has been successfully registered " + "on the CAMPA MIS Portal.\n\n"
+
+				+ "Your login credentials are as follows:\n" + "Username: " + account.getEmail() + "\n\n"
+
+				+ "Your account is now ACTIVE. You can log in to the portal "
+				+ "using your registered email address and password.\n\n"
+
+				+ "You are now eligible to submit the Annual Plan of Operation (APO) "
+				+ "through the CAMPA MIS Portal.\n\n"
+
+				+ "For security reasons, please change your password after your first login.\n\n"
+
+				+ "Regards,\n" + "CAMPA MIS Portal Team");
+
+		mailSender.send(message);
+
+	}
+
 }

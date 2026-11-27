@@ -71,6 +71,9 @@ public class UserAccountEntity {
 	@Column(name = "session_expires_at")
 	private OffsetDateTime sessionExpiresAt;
 
+	@Column(name = "scheme_id")
+	private Long schemeId;
+
 	@PrePersist
 	protected void onCreate() {
 		OffsetDateTime now = OffsetDateTime.now();

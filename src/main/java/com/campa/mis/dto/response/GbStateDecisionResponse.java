@@ -2,7 +2,8 @@ package com.campa.mis.dto.response;
 
 public record GbStateDecisionResponse(
     Long gbStateDecisionId,
-    Long stateCode,
+    String stateCode,
+    String stateName,
     Boolean isSelectedForStateApo,
     String stateGbDecision
 ) {}

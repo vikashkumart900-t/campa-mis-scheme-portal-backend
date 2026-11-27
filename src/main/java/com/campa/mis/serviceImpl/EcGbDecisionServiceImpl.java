@@ -1,16 +1,17 @@
 package com.campa.mis.serviceImpl;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-
 import lombok.RequiredArgsConstructor;
-
 import com.campa.mis.dto.request.EcDecisionRequest;
 import com.campa.mis.dto.request.EcGbDecisionRequest;
 import com.campa.mis.dto.request.GbDecisionRequest;
@@ -22,9 +23,15 @@ import com.campa.mis.dto.response.GbStateDecisionResponse;
 import com.campa.mis.entity.EcDecisionEntity;
 import com.campa.mis.entity.GbDecisionEntity;
 import com.campa.mis.entity.GbStateDecisionEntity;
+import com.campa.mis.entity.SchemeEntity;
+import com.campa.mis.entity.SchemeRoleStatusEntity;
+import com.campa.mis.entity.StateEntity;
 import com.campa.mis.repo.EcDecisionRepository;
 import com.campa.mis.repo.GbDecisionRepository;
 import com.campa.mis.repo.GbStateDecisionRepository;
+import com.campa.mis.repo.SchemeRepository;
+import com.campa.mis.repo.SchemeRoleStatusRepository;
+import com.campa.mis.repo.StateRepository;
 import com.campa.mis.service.EcGbDecisionService;
 
 @Service
@@ -34,6 +41,9 @@ public class EcGbDecisionServiceImpl implements EcGbDecisionService {
 	private final EcDecisionRepository ecRepository;
 	private final GbDecisionRepository gbRepository;
 	private final GbStateDecisionRepository gbStateRepository;
+	private final StateRepository stateRepository;
+	private final SchemeRoleStatusRepository schemeRoleStatusRepository;
+	private final SchemeRepository schemeRepository;
 
 	@Override
 	@Transactional
@@ -173,7 +183,7 @@ public class EcGbDecisionServiceImpl implements EcGbDecisionService {
 
 		gbStateRepository.saveAll(stateEntities);
 
-		return mapGbResponse(saved, stateEntities);
+		return mapGbResponse(saved, stateEntities, null,null,null);
 	}
 
 	// ---------------- GB FETCH ----------------
@@ -182,13 +192,25 @@ public class EcGbDecisionServiceImpl implements EcGbDecisionService {
 	@Transactional(readOnly = true)
 	public GbDecisionResponse getGbDecision(Long schemeId) {
 
+		SchemeRoleStatusEntity schemeRoleStatusEntity = schemeRoleStatusRepository.findBySchemeId(schemeId)
+				.orElse(null);
+
+		LocalDateTime campaUpdatedAt = schemeRoleStatusEntity != null ? schemeRoleStatusEntity.getCampaUpdatedAt()
+				: null;
+
+		Optional<SchemeEntity> schemeEntity = schemeRepository.findById(schemeId);
+
+		String schemeName = schemeEntity.map(SchemeEntity::getSchemeName).orElse(null);
+
+		String proposalId = "PROP/" + LocalDate.now().getYear() + "/" + schemeId;
+
 		GbDecisionEntity entity = gbRepository.findBySchemeId(schemeId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
 						"GB decision not found for scheme ID: " + schemeId));
 
 		List<GbStateDecisionEntity> states = gbStateRepository.findByGbDecisionId(entity.getGbDecisionId());
 
-		return mapGbResponse(entity, states);
+		return mapGbResponse(entity, states, campaUpdatedAt,schemeName,proposalId);
 	}
 
 	// ---------------- GB FILE DOWNLOAD ----------------
@@ -213,32 +235,41 @@ public class EcGbDecisionServiceImpl implements EcGbDecisionService {
 
 		return new EcDecisionResponse(entity.getEcDecisionId(), entity.getSchemeId(), entity.getMeetingDate(),
 				entity.getAgendaItemNo(), entity.getAgendaSubject(), entity.getEcDecision(), entity.getEcRemarks(),
-				entity.getMeetingMinutesFileName(), entity.getMeetingMinutesContentType(), entity.getDecisionStatus());
+				entity.getMeetingMinutesFileName(), entity.getMeetingMinutesContentType());
 	}
 
 	private GbStateDecisionEntity mapStateEntity(Long gbDecisionId, GbStateDecisionRequest request) {
 
-		GbStateDecisionEntity entity = new GbStateDecisionEntity();
+		GbStateDecisionEntity gbStateDecisionEntity = new GbStateDecisionEntity();
 
-		entity.setGbDecisionId(gbDecisionId);
-		entity.setStateCode(request.stateCode());
-		entity.setIsSelectedForStateApo(request.isSelectedForStateApo());
-		entity.setStateGbDecision(request.stateGbDecision());
+		gbStateDecisionEntity.setGbDecisionId(gbDecisionId);
+		gbStateDecisionEntity.setStateCode(request.stateCode());
 
-		return entity;
+		gbStateDecisionEntity.setIsSelectedForStateApo(request.isSelectedForStateApo());
+
+		gbStateDecisionEntity
+				.setStateGbDecision(Boolean.TRUE.equals(request.isSelectedForStateApo()) ? "APPROVED" : "NOT_APPROVED");
+
+		return gbStateDecisionEntity;
 	}
 
-	private GbDecisionResponse mapGbResponse(GbDecisionEntity entity, List<GbStateDecisionEntity> states) {
+	private GbDecisionResponse mapGbResponse(GbDecisionEntity entity, List<GbStateDecisionEntity> states,
+			LocalDateTime campaApprovalDate,String schemeName,
+		    String proposalID) {
 
-		List<GbStateDecisionResponse> stateResponses = states.stream()
-				.map(state -> new GbStateDecisionResponse(state.getGbStateDecisionId(), state.getStateCode(),
-						state.getIsSelectedForStateApo(), state.getStateGbDecision()))
-				.toList();
+		List<GbStateDecisionResponse> stateResponses = states.stream().map(state -> {
+
+			String stateName = stateRepository.findByStateCode(state.getStateCode()).map(StateEntity::getStateName)
+					.orElse(null);
+
+			return new GbStateDecisionResponse(state.getGbStateDecisionId(), state.getStateCode(), stateName,
+					state.getIsSelectedForStateApo(), state.getStateGbDecision());
+		}).toList();
 
 		return new GbDecisionResponse(entity.getGbDecisionId(), entity.getSchemeId(), entity.getMeetingDate(),
 				entity.getAgendaItemNo(), entity.getAgendaSubject(), entity.getGbDecision(), entity.getGbRemarks(),
-				entity.getMeetingMinutesFileName(), entity.getMeetingMinutesContentType(), entity.getDecisionStatus(),
-				stateResponses);
+				entity.getMeetingMinutesFileName(), entity.getMeetingMinutesContentType(), stateResponses,
+				campaApprovalDate,schemeName,proposalID);
 	}
 
 	private void validatePdf(MultipartFile file) {
@@ -250,8 +281,8 @@ public class EcGbDecisionServiceImpl implements EcGbDecisionService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only PDF files are allowed");
 		}
 
-		if (file.getSize() > 10 * 1024 * 1024) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File size must not exceed 10 MB");
+		if (file.getSize() > 10 * 1024 * 1024 * 1024 * 1024) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File size must not exceed 30 MB");
 		}
 	}
 }

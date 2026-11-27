@@ -44,9 +44,6 @@ public class EcDecisionEntity {
 	@Column(name = "meeting_minutes_file_data", columnDefinition = "bytea")
 	private byte[] meetingMinutesFileData;
 
-	@Column(name = "decision_status")
-	private String decisionStatus = "PENDING";
-
 	@Column(name = "created_at")
 	private OffsetDateTime createdAt;
 

@@ -472,20 +472,19 @@ public class SchemeServiceImpl implements SchemeService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
 		}
 
-		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD")
-				&& !roleCode.equals("STATE_HOD")) {
+		if (!roleCode.equals("IA") && !roleCode.equals("PD") && !roleCode.equals("HOD")) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only IA ,HOD and PD registration is supported");
 		}
 
 		var role = userRoleRepository.findByRoleCode(roleCode)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role: " + roleCode));
 
-		if (roleCode.equalsIgnoreCase("IA")) {
+		if (roleCode.equalsIgnoreCase("IA") || roleCode.equalsIgnoreCase("HOD")) {
 
-			// IA registration
-			if (request.organizationId() == null) {
+			// IA OR HOD registration
+			if (request.organizationId() == null && request.programDivisionId() == null) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-						"Organization is required for IA registration");
+						"OrganizationID and Program-Division ID is required for IA/HOD registration");
 			}
 
 		} else if (roleCode.equalsIgnoreCase("PD")) {
@@ -493,17 +492,9 @@ public class SchemeServiceImpl implements SchemeService {
 			// PD registration
 			if (request.programDivisionId() == null) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-						"Programme Division is required for PD registration");
+						"Programme-Division ID is required for PD registration");
 			}
 
-		} else if (roleCode.equalsIgnoreCase("STATE_HOD")) {
-
-			// STATE_HOD does not require organization or program division
-			if (request.organizationId() != null || request.programDivisionId() != null) {
-
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-						"Organization and Programme Division are not required for STATE_HOD registration");
-			}
 		}
 
 		UserAccountEntity account = new UserAccountEntity();
@@ -516,28 +507,16 @@ public class SchemeServiceImpl implements SchemeService {
 		account.setEmail(email);
 		account.setMobile(request.mobile().trim());
 		account.setDesignation(request.designation());
+		account.setSchemeId(request.schemeId());
 
 		// The incoming value must be the raw password, never an existing hash.
 		account.setPasswordHash(passwordEncoder.encode(request.password()));
-
-		if (roleCode.equalsIgnoreCase("STATE_HOD")) {
-			account.setAccountStatus("ACTIVE");
-		} else {
-			account.setAccountStatus("PENDING_APPROVAL");
-		}
+		account.setAccountStatus("PENDING_APPROVAL");
 
 		// Save account
 		UserAccountEntity savedAccount = userAccountRepository.save(account);
 
-		// Role-wise email
-		if ("STATE_HOD".equalsIgnoreCase(roleCode)) {
-
-			emailService.sendStateHodRegistrationEmail(savedAccount.getEmail(), savedAccount.getFullName());
-
-		} else {
-
-			emailService.sendRegistrationEmail(savedAccount.getEmail(), savedAccount.getFullName(), request.password());
-		}
+		emailService.sendRegistrationEmail(savedAccount.getEmail(), savedAccount.getFullName(), request.password());
 
 		return savedAccount;
 

@@ -11,6 +11,5 @@ public record EcDecisionResponse(
     String ecDecision,
     String ecRemarks,
     String meetingMinutesFileName,
-    String meetingMinutesContentType,
-    String decisionStatus
+    String meetingMinutesContentType
 ) {}

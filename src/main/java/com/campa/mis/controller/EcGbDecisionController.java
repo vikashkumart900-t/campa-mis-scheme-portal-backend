@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.campa.mis.dto.request.EcDecisionRequest;
 import com.campa.mis.dto.request.EcGbDecisionRequest;
-import com.campa.mis.dto.request.GbDecisionRequest;
 import com.campa.mis.dto.response.EcDecisionResponse;
 import com.campa.mis.dto.response.EcGbDecisionResponse;
 import com.campa.mis.dto.response.GbDecisionResponse;
@@ -25,7 +23,6 @@ import com.campa.mis.service.EcGbDecisionService;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;

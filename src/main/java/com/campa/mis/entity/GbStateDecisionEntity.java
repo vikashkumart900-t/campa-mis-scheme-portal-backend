@@ -30,13 +30,13 @@ public class GbStateDecisionEntity {
     private Long gbDecisionId;
 
     @Column(name = "state_code", nullable = false)
-    private Long stateCode;
+    private String stateCode;
 
     @Column(name = "is_selected_for_state_apo")
-    private Boolean isSelectedForStateApo = false;
+    private Boolean isSelectedForStateApo;
 
     @Column(name = "state_gb_decision")
-    private String stateGbDecision = "PENDING";
+    private String stateGbDecision;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

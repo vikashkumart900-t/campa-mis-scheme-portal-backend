@@ -8,8 +8,10 @@ import jakarta.validation.constraints.Size;
 public record RegistrationRequestDTO(
 
     @NotBlank(message = "Role is required")
-    @Pattern(regexp = "IA|PD|HOD|STATE_HOD", message = "Role must be IA or PD or HOD or STATE_HOD")
+    @Pattern(regexp = "IA|PD|HOD", message = "Role must be IA or PD or HOD")
     String roleCode,
+    
+    Long schemeId,
 
     Long organizationId,
 

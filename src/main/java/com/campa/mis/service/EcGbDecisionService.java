@@ -2,9 +2,7 @@ package com.campa.mis.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.campa.mis.dto.request.EcDecisionRequest;
 import com.campa.mis.dto.request.EcGbDecisionRequest;
-import com.campa.mis.dto.request.GbDecisionRequest;
 import com.campa.mis.dto.response.EcDecisionResponse;
 import com.campa.mis.dto.response.EcGbDecisionResponse;
 import com.campa.mis.dto.response.GbDecisionResponse;
